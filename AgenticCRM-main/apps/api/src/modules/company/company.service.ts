@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { prisma } from '@wacrm/database';
 
 export interface UpdateCompanyDto {
@@ -23,7 +23,50 @@ const ahead = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000
 const demoTags = ['demo', DEMO_MARKER];
 
 @Injectable()
-export class CompanyService {
+export class CompanyService implements OnModuleInit {
+  private readonly logger = new Logger(CompanyService.name);
+
+  async onModuleInit() {
+    // One-time operator-authorized seed. It only runs when explicitly enabled
+    // and only when the database contains exactly one workspace. On multi-tenant
+    // deployments it refuses to guess which company should receive demo data.
+    if (process.env.BIZPILOT_DEMO_SEED_SINGLE_COMPANY !== 'true') return;
+
+    try {
+      const companies = await prisma.company.findMany({
+        select: { id: true },
+        take: 2,
+      });
+      if (companies.length !== 1) {
+        this.logger.warn(
+          `One-time demo seed skipped: expected exactly one workspace, found at least ${companies.length}.`,
+        );
+        return;
+      }
+
+      const admin = await prisma.user.findFirst({
+        where: {
+          companyId: companies[0].id,
+          role: { in: ['ADMIN', 'SUPER_ADMIN'] },
+          isActive: true,
+        },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true, role: true },
+      });
+      if (!admin) {
+        this.logger.warn('One-time demo seed skipped: no active workspace administrator was found.');
+        return;
+      }
+
+      const result = await this.loadDemoData(companies[0].id, admin.id, admin.role);
+      this.logger.log(
+        `One-time demo seed completed safely: ${JSON.stringify(result.counts)}; alreadyLoaded=${result.alreadyLoaded}.`,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`One-time demo seed did not complete: ${message}`);
+    }
+  }
   async get(companyId: string) {
     const company = await prisma.company.findUnique({ where: { id: companyId } });
     if (!company) throw new NotFoundException('Company not found');
