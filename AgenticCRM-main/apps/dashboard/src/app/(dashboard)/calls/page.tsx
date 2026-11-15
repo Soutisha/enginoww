@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { PhoneCall, Plus, Save, UserRound, FileText, ArrowRight } from 'lucide-react';
+import { PhoneCall, Save, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api-client';
 
