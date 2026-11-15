@@ -7,21 +7,7 @@ import { toast } from 'sonner';
 import { Bot, CheckCircle, XCircle, Loader2, Zap, Plus, Trash2, ArrowDown } from 'lucide-react';
 
 const PROVIDERS: Array<{ value: string; label: string; desc: string }> = [
-  { value: 'GEMINI', label: 'Google Gemini', desc: 'gemini-2.5-pro/flash — free tier available' },
-  { value: 'OPENAI', label: 'OpenAI', desc: 'gpt-4.1, gpt-4o, o3, o4-mini' },
-  { value: 'ANTHROPIC', label: 'Anthropic Claude', desc: 'claude-opus-4-6, claude-sonnet-4-6' },
-  { value: 'GROQ', label: 'Groq', desc: 'llama-3.3-70b, mixtral — ultra fast' },
-  { value: 'DEEPSEEK', label: 'DeepSeek', desc: 'deepseek-chat, deepseek-reasoner' },
-  { value: 'XAI', label: 'xAI (Grok)', desc: 'grok-4, grok-3 — by Elon Musk' },
-  { value: 'MISTRAL', label: 'Mistral', desc: 'mistral-large, codestral' },
-  { value: 'TOGETHER', label: 'Together AI', desc: 'Llama-4, DeepSeek, Kimi — pay-per-token' },
-  { value: 'MOONSHOT', label: 'Moonshot (Kimi)', desc: 'kimi-k2.5, kimi-k2-thinking' },
-  { value: 'GLM', label: 'GLM (ZhipuAI)', desc: 'glm-5.1, glm-4.7 — Chinese AI' },
-  { value: 'QWEN', label: 'Qwen (Alibaba)', desc: 'qwen-max, qwen-plus, qwen3.5' },
-  { value: 'STEPFUN', label: 'StepFun', desc: 'step-2-16k, step-1-200k' },
-  { value: 'OLLAMA', label: 'Ollama (Local)', desc: 'Self-hosted models — no API key needed' },
-  { value: 'OPENROUTER', label: 'OpenRouter', desc: 'Access 100+ models with one key' },
-  { value: 'CUSTOM', label: 'Custom (OpenAI-compatible)', desc: 'Any API with OpenAI format' },
+  { value: 'OPENAI', label: 'OpenAI', desc: 'GPT-5.4 mini, GPT-5.4, GPT-5.5' },
 ];
 
 const PROMPT_PRESETS = [
@@ -36,7 +22,7 @@ interface FallbackEntry { provider: string; model: string; baseUrl?: string; api
 
 export default function AiSettingsPage() {
   const qc = useQueryClient();
-  const [provider, setProvider] = useState('GEMINI');
+  const [provider, setProvider] = useState('OPENAI');
   const [model, setModel] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [baseUrl, setBaseUrl] = useState('');
@@ -49,7 +35,7 @@ export default function AiSettingsPage() {
   const [testResult, setTestResult] = useState<{ ok: boolean; error?: string; latencyMs?: number; reply?: string } | null>(null);
 
   // Fallback chain state
-  const [fbProvider, setFbProvider] = useState('GROQ');
+  const [fbProvider, setFbProvider] = useState('OPENAI');
   const [fbModel, setFbModel] = useState('');
   const [fbApiKey, setFbApiKey] = useState('');
   const [fbBaseUrl, setFbBaseUrl] = useState('');
@@ -155,7 +141,7 @@ export default function AiSettingsPage() {
     } finally { setTesting(false); }
   };
 
-  const needsBaseUrl = provider === 'OLLAMA' || provider === 'CUSTOM';
+  const needsBaseUrl = false;
 
   return (
     <div className="h-full flex flex-col">
@@ -167,9 +153,12 @@ export default function AiSettingsPage() {
       <div className="flex-1 overflow-auto p-4">
         <div className="max-w-2xl space-y-4">
 
-          {/* Provider Selection */}
+          {/* OpenAI provider */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Provider & Model</p>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">OpenAI connection</p>
+            <p className="mb-3 text-[11px] leading-relaxed text-gray-600">
+              BizPilot uses OpenAI for AI Chat, CRM tool calling, image understanding and AI workflows. Other AI providers are disabled.
+            </p>
             <div className="grid grid-cols-1 gap-3">
               <div>
                 <label className="text-[11px] font-medium text-gray-600 mb-1 block">AI Provider</label>
@@ -200,15 +189,18 @@ export default function AiSettingsPage() {
 
               <div>
                 <label className="text-[11px] font-medium text-gray-600 mb-1 block">
-                  API Key {config?.apiKeySet && <span className="text-gray-800">(configured)</span>}
+                  OpenAI API Key {config?.apiKeySet && <span className="text-emerald-700">(configured)</span>}
                 </label>
                 <input
                   type="password"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder={config?.apiKeySet ? 'Enter new key to change...' : 'Paste your API key'}
+                  placeholder={config?.apiKeySet ? 'Key saved — enter a new key to replace it' : 'Paste your OpenAI API key'}
                   className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder:text-gray-300"
                 />
+                <p className="mt-1.5 text-[10px] leading-relaxed text-gray-500">
+                  Create an API key in <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="font-medium text-blue-700 underline">OpenAI Platform</a>. This is separate from a ChatGPT subscription. The key is encrypted for this workspace and never displayed again.
+                </p>
               </div>
 
               {needsBaseUrl && (
@@ -297,11 +289,11 @@ export default function AiSettingsPage() {
           {/* Fallback Model Chain */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center justify-between mb-1">
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Fallback Models</p>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">OpenAI Fallback Models</p>
               <span className="text-[9px] text-gray-400">{fallbacks.length}/5</span>
             </div>
             <p className="text-[10px] text-gray-400 mb-3">
-              Tried in order when the primary model returns 503 / rate-limit / overloaded. Uses the primary API key unless you specify a different one.
+              Tried in order when the primary OpenAI model is temporarily unavailable. Uses the primary OpenAI key unless you specify a separate OpenAI key.
             </p>
 
             {/* Current chain */}
@@ -338,7 +330,7 @@ export default function AiSettingsPage() {
               </div>
             )}
 
-            {/* Add fallback form */}
+            {/* Add OpenAI fallback form */}
             {fallbacks.length < 5 && (
               <div className="border border-dashed border-gray-200 rounded p-3 space-y-2">
                 <p className="text-[10px] font-medium text-gray-500">Add fallback</p>
@@ -362,7 +354,7 @@ export default function AiSettingsPage() {
                   type="password"
                   value={fbApiKey}
                   onChange={(e) => setFbApiKey(e.target.value)}
-                  placeholder="API key (optional — uses primary key if blank)"
+                  placeholder="OpenAI API key (optional — uses primary key if blank)"
                   className="w-full border border-gray-200 rounded px-2 py-1.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder:text-gray-300"
                 />
                 {(fbProvider === 'OLLAMA' || fbProvider === 'CUSTOM') && (
