@@ -3,7 +3,7 @@ import {
 } from '@nestjs/common';
 import { prisma } from '@wacrm/database';
 import { decrypt } from '@wacrm/shared';
-import { PROVIDER_BASE_URLS } from '../settings/ai-settings.service';
+import { OPENAI_MODELS } from '../settings/ai-settings.service';
 
 export const MARKETING_TYPES = [
   'product_description', 'whatsapp_reply', 'promotional_copy',
@@ -117,8 +117,11 @@ export class MarketingService {
       prisma.aiConfig.findUnique({ where: { companyId } }),
     ]);
     if (!company) throw new NotFoundException('Company not found');
-    if (!aiConfig?.apiKeyEncrypted) {
-      throw new ServiceUnavailableException('Configure and test an AI provider in Settings → AI before generating marketing content.');
+    if (aiConfig && aiConfig.provider !== 'OPENAI') {
+      throw new ServiceUnavailableException('This workspace must be connected to OpenAI in Settings → AI before generating marketing content.');
+    }
+    if (!aiConfig?.apiKeyEncrypted && !process.env.OPENAI_API_KEY) {
+      throw new ServiceUnavailableException('Add an OpenAI API key in Settings → AI before generating marketing content.');
     }
 
     let product: Record<string, unknown> | null = null;
@@ -208,45 +211,39 @@ export class MarketingService {
   }
 
   private async callProvider(config: any, prompt: string): Promise<any> {
-    const provider = String(config.provider);
-    const model = String(config.model);
-    const apiKey = decrypt(config.apiKeyEncrypted);
-    const baseUrl = provider === 'GEMINI'
-      ? 'https://generativelanguage.googleapis.com/v1beta/openai'
-      : provider === 'OPENAI' ? 'https://api.openai.com/v1'
-      : provider === 'ANTHROPIC' ? null
-      : provider === 'OLLAMA' ? (config.baseUrl || 'http://localhost:11434/v1')
-      : provider === 'CUSTOM' ? config.baseUrl
-      : PROVIDER_BASE_URLS[provider as keyof typeof PROVIDER_BASE_URLS];
-    if (provider === 'CUSTOM' && !baseUrl) throw new BadRequestException('A base URL is required for the CUSTOM AI provider');
-    if (provider === 'ANTHROPIC') {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST', headers: {
-          'content-type': 'application/json', 'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({ model, max_tokens: Math.min(4000, config.maxTokens || 1800),
-          temperature: config.temperature ?? 0.6,
-          system: 'You are a professional, fact-conscious business marketing copywriter.',
-          messages: [{ role: 'user', content: prompt }] }),
-        signal: AbortSignal.timeout(60_000),
-      }).catch((e: unknown) => { throw new ServiceUnavailableException(`AI provider unavailable: ${e instanceof Error ? e.message : 'network error'}`); });
-      if (!response.ok) throw new ServiceUnavailableException(`AI provider error (${response.status}): ${(await response.text()).slice(0, 400)}`);
-      const payload = await response.json() as { content?: Array<{ type: string; text?: string }> };
-      return this.parseJson(payload.content?.filter((x) => x.type === 'text').map((x) => x.text || '').join('\n') || '');
+    if (config?.provider && config.provider !== 'OPENAI') {
+      throw new ServiceUnavailableException('Only OpenAI is enabled for marketing generation.');
     }
-    if (!baseUrl) throw new BadRequestException(`Provider ${provider} is not supported for marketing generation`);
-    const response = await fetch(`${String(baseUrl).replace(/\/$/, '')}/chat/completions`, {
-      method: 'POST', headers: { 'content-type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ model, temperature: config.temperature ?? 0.6,
-        max_tokens: Math.min(4000, config.maxTokens || 1800),
+    const model = OPENAI_MODELS.includes(config?.model) ? config.model : 'gpt-5.4-mini';
+    const apiKey = config?.apiKeyEncrypted ? decrypt(config.apiKeyEncrypted) : process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new ServiceUnavailableException('OpenAI API key is not configured.');
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        temperature: config?.temperature ?? 0.6,
+        max_completion_tokens: Math.min(4000, config?.maxTokens || 1800),
+        reasoning_effort: 'none',
+        response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: 'You are a professional, fact-conscious business marketing copywriter. Return valid JSON only.' },
           { role: 'user', content: prompt },
-        ] }),
+        ],
+      }),
       signal: AbortSignal.timeout(60_000),
-    }).catch((e: unknown) => { throw new ServiceUnavailableException(`AI provider unavailable: ${e instanceof Error ? e.message : 'network error'}`); });
-    if (!response.ok) throw new ServiceUnavailableException(`AI provider error (${response.status}): ${(await response.text()).slice(0, 400)}`);
+    }).catch((error: unknown) => {
+      throw new ServiceUnavailableException(
+        `OpenAI unavailable: ${error instanceof Error ? error.message : 'network error'}`,
+      );
+    });
+
+    if (!response.ok) {
+      throw new ServiceUnavailableException(
+        `OpenAI error (${response.status}): ${(await response.text()).slice(0, 400)}`,
+      );
+    }
     const payload = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
     return this.parseJson(payload.choices?.[0]?.message?.content || '');
   }
