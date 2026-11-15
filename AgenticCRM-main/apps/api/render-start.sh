@@ -6,6 +6,9 @@ export DIRECT_DATABASE_URL="${DIRECT_DATABASE_URL:-${DATABASE_URL:-}}"
 : "${DATABASE_URL:?DATABASE_URL is required}"
 : "${DIRECT_DATABASE_URL:?DIRECT_DATABASE_URL is required}"
 
+echo "[startup] Enabling pgvector before Prisma schema sync"
+psql "$DIRECT_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS vector;'
+
 echo "[startup] Checking PostgreSQL schema"
 TABLE_EXISTS="$(psql "$DIRECT_DATABASE_URL" -tAc "SELECT to_regclass('public.\"Company\"') IS NOT NULL" | tr -d '[:space:]')"
 
