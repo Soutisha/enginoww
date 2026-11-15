@@ -146,7 +146,13 @@ export class MarketingService {
       variants: Math.min(5, Math.max(1, Number(input.variants) || 3)),
       includeHashtags: input.includeHashtags !== false,
     };
-    const generated = await this.callProvider(aiConfig, this.buildPrompt(promptInput));
+    const model = aiConfig?.model && (OPENAI_MODELS as readonly string[]).includes(aiConfig.model)
+      ? aiConfig.model
+      : 'gpt-5.4-mini';
+    const generated = await this.callProvider(
+      { ...aiConfig, provider: 'OPENAI', model },
+      this.buildPrompt(promptInput),
+    );
     const result = this.normalizeResult(generated, promptInput);
     const brandCheck = this.checkBrandConsistency(result, brand);
     const asset = await prisma.marketingAsset.create({
@@ -155,11 +161,11 @@ export class MarketingService {
         channel: promptInput.channel || null, platform: promptInput.platform || null,
         title: result.title || `${input.type.replaceAll('_', ' ')} · ${new Date().toLocaleDateString('en-IN')}`,
         input: promptInput as any, result: { ...result, brandCheck } as any,
-        provider: String(aiConfig.provider), model: aiConfig.model, status: 'DRAFT',
+        provider: 'OPENAI', model, status: 'DRAFT',
       },
     });
     return { asset, result: { ...result, brandCheck }, brandProfile: brand,
-      generation: { provider: aiConfig.provider, model: aiConfig.model, savedAs: 'DRAFT' } };
+      generation: { provider: 'OPENAI', model, savedAs: 'DRAFT' } };
   }
 
   async listAssets(companyId: string, type?: string, limit = 30) {
