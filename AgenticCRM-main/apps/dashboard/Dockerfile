@@ -39,6 +39,8 @@ COPY --from=installer --chown=nextjs:nodejs /app/apps/dashboard/.next/static ./a
 COPY --from=installer --chown=nextjs:nodejs /app/apps/dashboard/public ./apps/dashboard/public
 
 USER nextjs
-EXPOSE 3001
-ENV PORT=3001
-CMD ["node", "apps/dashboard/server.js"]
+EXPOSE 10000
+ENV PORT=10000
+# Next standalone server reads HOSTNAME; override Docker's container hostname
+# so the process binds to all interfaces and Render's proxy can reach it.
+CMD ["sh", "-c", "HOSTNAME=0.0.0.0 exec node apps/dashboard/server.js"]
