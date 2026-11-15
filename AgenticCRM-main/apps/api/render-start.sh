@@ -29,5 +29,27 @@ psql "$DIRECT_DATABASE_URL" -v ON_ERROR_STOP=1 -f packages/database/prisma/migra
   echo "[startup] pgvector indexes unavailable; semantic memory may be limited"
 }
 
-echo "[startup] Starting BizPilot API"
-exec node apps/api/dist/apps/api/src/main.js
+API_ENTRY=""
+for candidate in \
+  apps/api/dist/main.js \
+  apps/api/dist/src/main.js \
+  apps/api/dist/apps/api/src/main.js
+do
+  if [ -f "$candidate" ]; then
+    API_ENTRY="$candidate"
+    break
+  fi
+done
+
+if [ -z "$API_ENTRY" ]; then
+  API_ENTRY="$(find apps/api/dist -maxdepth 6 -type f -name main.js -print -quit 2>/dev/null || true)"
+fi
+
+if [ -z "$API_ENTRY" ]; then
+  echo "[startup] ERROR: NestJS entrypoint not found under apps/api/dist"
+  find apps/api/dist -maxdepth 5 -type f -print 2>/dev/null | head -50 || true
+  exit 1
+fi
+
+echo "[startup] Starting BizPilot API from $API_ENTRY"
+exec node "$API_ENTRY"
