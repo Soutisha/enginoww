@@ -19,7 +19,7 @@ fi
 psql "$DIRECT_DATABASE_URL" -v ON_ERROR_STOP=1 -f packages/database/prisma/migrations/pre_push.sql || {
   echo "[startup] Pre-push compatibility SQL reported a warning; continuing"
 }
-prisma db push --schema=packages/database/prisma/schema.prisma
+prisma db push --config=packages/database/prisma/prisma.config.ts
 
 psql "$DIRECT_DATABASE_URL" -v ON_ERROR_STOP=1 -f packages/database/prisma/migrations/manual_pgvector.sql || {
   echo "[startup] pgvector unavailable; semantic memory features may be limited"
