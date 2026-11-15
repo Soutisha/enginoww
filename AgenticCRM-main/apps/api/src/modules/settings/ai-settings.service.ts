@@ -60,8 +60,18 @@ export class AiSettingsService implements OnModuleInit {
     for (const config of configs) {
       const isOpenAI = config.provider === 'OPENAI';
       const modelIsSupported = (OPENAI_MODELS as readonly string[]).includes(config.model);
-      const hasFallbacks = Array.isArray(config.fallbackModels) && config.fallbackModels.length > 0;
-      if (isOpenAI && modelIsSupported && !config.baseUrl && !hasFallbacks) continue;
+      const storedFallbacks = Array.isArray(config.fallbackModels)
+        ? config.fallbackModels as Array<{ provider?: string; model?: string; [key: string]: unknown }>
+        : [];
+      const safeFallbacks = isOpenAI
+        ? storedFallbacks.filter(
+            (entry) => entry.provider === 'OPENAI' &&
+              typeof entry.model === 'string' &&
+              (OPENAI_MODELS as readonly string[]).includes(entry.model),
+          )
+        : [];
+      const fallbacksChanged = JSON.stringify(storedFallbacks) !== JSON.stringify(safeFallbacks);
+      if (isOpenAI && modelIsSupported && !config.baseUrl && !fallbacksChanged) continue;
 
       await prisma.aiConfig.update({
         where: { companyId: config.companyId },
@@ -69,7 +79,7 @@ export class AiSettingsService implements OnModuleInit {
           provider: 'OPENAI',
           model: isOpenAI && modelIsSupported ? config.model : DEFAULT_OPENAI_MODEL,
           baseUrl: null,
-          fallbackModels: [],
+          fallbackModels: safeFallbacks as unknown as object,
           ...(isOpenAI ? {} : { apiKeyEncrypted: null }),
           testStatus: null,
           testError: null,
@@ -132,7 +142,6 @@ export class AiSettingsService implements OnModuleInit {
       autoReplyEnabled: dto.autoReplyEnabled,
       toolCallingEnabled: dto.toolCallingEnabled,
       baseUrl: null,
-      fallbackModels: [],
     };
 
     // Workspace key takes precedence over the optional server-wide OpenAI key.
