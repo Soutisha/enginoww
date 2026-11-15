@@ -142,6 +142,32 @@
   .scroll-thin { scrollbar-width: thin; scrollbar-color: hsl(var(--line-strong)) transparent; }
   .scroll-thin::-webkit-scrollbar { width: 8px; height: 8px; }
   .scroll-thin::-webkit-scrollbar-thumb { background: hsl(var(--line-strong)); border-radius: 8px; }
+
+  /*
+   * Legacy screens can mix light-page text utilities with dark fields and
+   * buttons. Enforce a readable white foreground wherever those components
+   * explicitly use a near-black background.
+   */
+  .legacy-canvas :is(input, textarea, select)[class*="bg-black"],
+  .legacy-canvas :is(input, textarea, select)[class*="bg-gray-900"],
+  .legacy-canvas :is(input, textarea, select)[class*="bg-gray-950"] {
+    color: #fff !important;
+    caret-color: #fff;
+  }
+  .legacy-canvas :is(input, textarea, select)[class*="bg-black"]::placeholder,
+  .legacy-canvas :is(input, textarea, select)[class*="bg-gray-900"]::placeholder,
+  .legacy-canvas :is(input, textarea, select)[class*="bg-gray-950"]::placeholder {
+    color: #d1d5db !important;
+    opacity: 1;
+  }
+  .legacy-canvas :is(.bg-black, .bg-gray-900, .bg-gray-950):is(
+    .text-gray-900, .text-gray-800, .text-gray-700, .text-gray-600, .text-gray-500
+  ),
+  .legacy-canvas :is(.bg-black, .bg-gray-900, .bg-gray-950) :is(
+    .text-gray-900, .text-gray-800, .text-gray-700, .text-gray-600
+  ) {
+    color: #fff !important;
+  }
 }
 
 @keyframes shimmer {
