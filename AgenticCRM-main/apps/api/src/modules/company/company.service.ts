@@ -372,10 +372,34 @@ export class CompanyService {
         contactIds.length ? tx.deal.count({ where: { companyId, contactId: { in: contactIds }, NOT: { tags: { has: DEMO_MARKER } } } }) : 0,
         contactIds.length ? tx.task.count({ where: { companyId, contactId: { in: contactIds }, NOT: { tags: { has: DEMO_MARKER } } } }) : 0,
         contactIds.length ? tx.payment.count({ where: { companyId, contactId: { in: contactIds }, NOT: { tags: { has: DEMO_MARKER } } } }) : 0,
+        contactIds.length ? tx.ticket.count({ where: { companyId, contactId: { in: contactIds }, NOT: { tags: { has: DEMO_MARKER } } } }) : 0,
+        contactIds.length ? tx.quote.count({ where: { companyId, contactId: { in: contactIds }, NOT: { tags: { has: DEMO_MARKER } } } }) : 0,
+        contactIds.length ? tx.invoice.count({ where: { companyId, contactId: { in: contactIds }, NOT: { tags: { has: DEMO_MARKER } } } }) : 0,
+        contactIds.length ? tx.document.count({ where: { companyId, contactId: { in: contactIds }, NOT: { tags: { has: DEMO_MARKER } } } }) : 0,
+        contactIds.length ? tx.callRecord.count({ where: { companyId, contactId: { in: contactIds } } }) : 0,
+        contactIds.length ? tx.callLog.count({ where: { companyId, contactId: { in: contactIds } } }) : 0,
+        contactIds.length ? tx.contactNote.count({ where: { companyId, contactId: { in: contactIds } } }) : 0,
+        contactIds.length ? tx.sequenceEnrollment.count({ where: { companyId, contactId: { in: contactIds } } }) : 0,
+        contactIds.length ? tx.broadcastRecipient.count({ where: { companyId, contactId: { in: contactIds } } }) : 0,
+        contactIds.length ? tx.campaignRecipient.count({ where: { companyId, contactId: { in: contactIds } } }) : 0,
+        contactIds.length ? tx.formSubmission.count({ where: { companyId, contactId: { in: contactIds } } }) : 0,
+        contactIds.length ? tx.workflowExecution.count({ where: { companyId, contactId: { in: contactIds } } }) : 0,
+        contactIds.length ? tx.workflowEventOutbox.count({ where: { companyId, contactId: { in: contactIds } } }) : 0,
+        contactIds.length ? tx.calendarEvent.count({ where: { companyId, contactId: { in: contactIds } } }) : 0,
+        contactIds.length ? tx.activityLog.count({ where: { companyId, contactId: { in: contactIds } } }) : 0,
         leadIds.length ? tx.deal.count({ where: { companyId, leadId: { in: leadIds }, NOT: { tags: { has: DEMO_MARKER } } } }) : 0,
         leadIds.length ? tx.task.count({ where: { companyId, leadId: { in: leadIds }, NOT: { tags: { has: DEMO_MARKER } } } }) : 0,
+        leadIds.length ? tx.callRecord.count({ where: { companyId, leadId: { in: leadIds } } }) : 0,
+        leadIds.length ? tx.formSubmission.count({ where: { companyId, leadId: { in: leadIds } } }) : 0,
         dealIds.length ? tx.task.count({ where: { companyId, dealId: { in: dealIds }, NOT: { tags: { has: DEMO_MARKER } } } }) : 0,
+        dealIds.length ? tx.quote.count({ where: { companyId, dealId: { in: dealIds }, NOT: { tags: { has: DEMO_MARKER } } } }) : 0,
+        dealIds.length ? tx.invoice.count({ where: { companyId, dealId: { in: dealIds }, NOT: { tags: { has: DEMO_MARKER } } } }) : 0,
+        dealIds.length ? tx.calendarEvent.count({ where: { companyId, dealId: { in: dealIds } } }) : 0,
+        dealIds.length ? tx.document.count({ where: { companyId, dealId: { in: dealIds }, NOT: { tags: { has: DEMO_MARKER } } } }) : 0,
+        dealIds.length ? tx.activityLog.count({ where: { companyId, entityId: { in: dealIds } } }) : 0,
         productIds.length ? tx.dealLineItem.count({ where: { companyId, productId: { in: productIds }, deal: { NOT: { tags: { has: DEMO_MARKER } } } } }) : 0,
+        productIds.length ? tx.quoteLineItem.count({ where: { productId: { in: productIds }, quote: { NOT: { tags: { has: DEMO_MARKER } } } } }) : 0,
+        productIds.length ? tx.invoiceLineItem.count({ where: { productId: { in: productIds }, invoice: { NOT: { tags: { has: DEMO_MARKER } } } } }) : 0,
       ]);
       if (references.some((count) => count > 0)) {
         throw new BadRequestException(
@@ -383,15 +407,41 @@ export class CompanyService {
         );
       }
 
+      const demoAccountRows = accountIds.length
+        ? await tx.whatsAppAccount.findMany({
+            where: { companyId, id: { in: accountIds } },
+            select: { id: true, status: true },
+          })
+        : [];
+      if (demoAccountRows.some((account) => account.status !== 'DISCONNECTED')) {
+        throw new BadRequestException('A demo inbox is no longer disconnected. Nothing was deleted.');
+      }
+
       const conversations = accountIds.length
         ? await tx.conversation.findMany({
             where: { companyId, whatsappAccountId: { in: accountIds } },
-            select: { id: true },
+            select: { id: true, metadata: true },
           })
         : [];
+      const unsafeConversationIds = conversations
+        .filter((conversation) => {
+          const metadata = conversation.metadata as { demoMarker?: string } | null;
+          return metadata?.demoMarker !== DEMO_MARKER;
+        })
+        .map((conversation) => conversation.id);
+      if (unsafeConversationIds.length) {
+        throw new BadRequestException('The demo inbox contains a non-demo conversation. Nothing was deleted.');
+      }
       const conversationIds = conversations.map((item) => item.id);
 
       if (conversationIds.length) {
+        const messages = await tx.message.findMany({
+          where: { companyId, conversationId: { in: conversationIds } },
+          select: { idempotencyKey: true },
+        });
+        if (messages.some((message) => !message.idempotencyKey?.includes(DEMO_MARKER))) {
+          throw new BadRequestException('The demo inbox contains a non-demo message. Nothing was deleted.');
+        }
         await tx.message.deleteMany({ where: { companyId, conversationId: { in: conversationIds } } });
         await tx.conversation.deleteMany({ where: { companyId, id: { in: conversationIds } } });
       }
