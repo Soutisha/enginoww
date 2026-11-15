@@ -6,7 +6,7 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const checks = [
   ['Helmet security headers are enabled', read('apps/api/src/main.ts').includes('app.use(helmet())')],
   ['Request DTO whitelist and unknown-field rejection are enabled', read('apps/api/src/main.ts').includes('whitelist: true') && read('apps/api/src/main.ts').includes('forbidNonWhitelisted: true')],
-  ['Production CORS is restricted to the configured domain', read('apps/api/src/main.ts').includes('https://${process.env.DOMAIN}')],
+  ['Production CORS is restricted to normalized configured origins', read('apps/api/src/main.ts').includes('configuredCorsOrigins') && read('apps/api/src/main.ts').includes('process.env.CORS_ORIGINS || process.env.DOMAIN') && read('apps/api/src/main.ts').includes("origin.startsWith('https://')") && read('apps/api/src/main.ts').includes("origin: process.env.NODE_ENV === 'production' ? configuredCorsOrigins : true")],
   ['Production startup validates secrets and infrastructure', read('apps/api/src/main.ts').includes('validateRuntimeConfig()')],
   ['JWT strategy rejects missing production secret', read('apps/api/src/modules/auth/jwt.strategy.ts').includes("process.env.NODE_ENV === 'production'")],
   ['JWT refresh tokens are hash-checked for rotation', read('apps/api/src/modules/auth/auth.service.ts').includes('refreshTokenHash !== tokenHash')],
