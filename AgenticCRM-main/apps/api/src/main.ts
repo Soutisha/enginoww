@@ -31,7 +31,7 @@ async function bootstrap() {
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean)
-    .map((origin) => /^https?:\\/\\//i.test(origin) ? origin : `https://${origin}`);
+    .map((origin) => origin.startsWith('http://') || origin.startsWith('https://') ? origin : `https://${origin}`);
 
   app.enableCors({
     origin: process.env.NODE_ENV === 'production' ? configuredCorsOrigins : true,
