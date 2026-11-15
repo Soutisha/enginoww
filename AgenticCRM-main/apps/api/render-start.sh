@@ -10,10 +10,10 @@ echo "[startup] Checking PostgreSQL schema"
 TABLE_EXISTS="$(psql "$DIRECT_DATABASE_URL" -tAc "SELECT to_regclass('public.\"Company\"') IS NOT NULL" | tr -d '[:space:]')"
 
 if [ "$TABLE_EXISTS" = "t" ]; then
-  prisma db push --schema=packages/database/prisma/schema.prisma
+  prisma db push --config=packages/database/prisma/prisma.config.ts
 else
   echo "[startup] Initializing the empty demo database"
-  prisma db push --accept-data-loss --schema=packages/database/prisma/schema.prisma
+  prisma db push --accept-data-loss --config=packages/database/prisma/prisma.config.ts
 fi
 
 psql "$DIRECT_DATABASE_URL" -v ON_ERROR_STOP=1 -f packages/database/prisma/migrations/pre_push.sql || {
