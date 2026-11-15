@@ -328,7 +328,7 @@ export class CompanyService {
       }
 
       return { alreadyLoaded: false };
-    });
+    }, { maxWait: 10_000, timeout: 30_000 });
 
     const status = await this.getDemoDataStatus(companyId);
     return {
@@ -405,7 +405,7 @@ export class CompanyService {
       await tx.lead.deleteMany({ where: { companyId, tags: { has: DEMO_MARKER } } });
       await tx.product.deleteMany({ where: { companyId, tags: { has: DEMO_MARKER } } });
       await tx.contact.deleteMany({ where: { companyId, tags: { has: DEMO_MARKER } } });
-    });
+    }, { maxWait: 10_000, timeout: 30_000 });
 
     return {
       loaded: false,
