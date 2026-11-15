@@ -139,7 +139,6 @@ export default function AiSettingsPage() {
     } finally { setTesting(false); }
   };
 
-  const needsBaseUrl = false;
 
   return (
     <div className="h-full flex flex-col">
