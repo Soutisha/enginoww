@@ -96,7 +96,7 @@ const workflowEventsService = new WorkflowEventsService(workflowEventsQueue);
 
 const memoryService = new MemoryService();
 const leadsService = new LeadsService(workflowEventsService);
-const dealsService = new DealsService();
+const dealsService = new DealsService(workflowEventsService);
 const tasksService = new TasksService();
 const productsService = new ProductsService();
 const templatesService = new TemplatesService();
