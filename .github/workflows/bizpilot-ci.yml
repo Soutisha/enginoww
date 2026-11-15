@@ -46,6 +46,7 @@ jobs:
           pnpm verify:task18
           pnpm verify:task19
           pnpm verify:task20
+          pnpm verify:openai
       - run: pnpm turbo lint
       - run: pnpm turbo type-check
 
