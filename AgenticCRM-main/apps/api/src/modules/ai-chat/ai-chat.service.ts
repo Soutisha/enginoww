@@ -774,8 +774,8 @@ export class AiChatService {
       fallbackContent = `Done! ${actions.map((a) => a.result).join(' | ')}`;
     } else {
       // AI returned nothing — likely a provider issue
-      console.error('[AI Chat] Empty response from provider. Provider:', config.provider, 'Model:', config.model);
-      fallbackContent = `The AI model (${config.provider}/${config.model}) returned an empty response. This usually means:\n` +
+      console.error('[AI Chat] Empty response from OpenAI. Model:', config.model);
+      fallbackContent = `The OpenAI model (${config.model}) returned an empty response. This usually means:\n` +
         `1. The model doesn't support function/tool calling\n` +
         `2. The API key may be invalid or rate-limited\n` +
         `3. Try another supported OpenAI model in Settings → AI.`;
@@ -784,7 +784,7 @@ export class AiChatService {
     return {
       content: fallbackContent,
       actions,
-      provider: config.provider,
+      provider: 'OPENAI',
       model: config.model,
       latencyMs: Date.now() - start,
     };
