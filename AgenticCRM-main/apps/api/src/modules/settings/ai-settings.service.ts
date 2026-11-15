@@ -79,7 +79,7 @@ export class AiSettingsService implements OnModuleInit {
           provider: 'OPENAI',
           model: isOpenAI && modelIsSupported ? config.model : DEFAULT_OPENAI_MODEL,
           baseUrl: null,
-          fallbackModels: safeFallbacks as unknown as object,
+          fallbackModels: JSON.parse(JSON.stringify(safeFallbacks)),
           ...(isOpenAI ? {} : { apiKeyEncrypted: null }),
           testStatus: null,
           testError: null,
