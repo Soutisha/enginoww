@@ -7,10 +7,21 @@
     "declaration": false,
     "declarationMap": false,
     "paths": {
-      "@wacrm/database": ["../../packages/database/src/index.ts"],
-      "@wacrm/shared": ["../../packages/shared/src/index.ts"]
+      "@wacrm/database": [
+        "../../packages/database/src/index.ts"
+      ],
+      "@wacrm/shared": [
+        "../../packages/shared/src/index.ts"
+      ]
     }
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.spec.ts",
+    "**/*.e2e-spec.ts"
+  ]
 }
