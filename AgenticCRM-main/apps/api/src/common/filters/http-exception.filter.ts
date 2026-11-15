@@ -24,6 +24,18 @@ export class HttpExceptionFilter implements ExceptionFilter {
         ? exception.getResponse()
         : 'Internal server error';
 
+    // Keep 5xx diagnostics in Render logs without recording request bodies,
+    // credentials, tokens or other user-submitted data.
+    if (status >= 500) {
+      const detail = exception instanceof Error
+        ? `${exception.name}: ${exception.message}`
+        : String(exception);
+      console.error(`[http-exception] ${request.method} ${request.originalUrl} -> ${status}: ${detail}`);
+      if (exception instanceof Error && exception.stack) {
+        console.error(exception.stack);
+      }
+    }
+
     response.status(status).json({
       success: false,
       statusCode: status,
