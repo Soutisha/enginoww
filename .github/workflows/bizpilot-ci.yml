@@ -1,0 +1,127 @@
+name: BizPilot CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bizpilot-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-type-check:
+    name: Lint, type-check and roadmap verification
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: AgenticCRM-main
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: AgenticCRM-main/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Verify implementation roadmap tasks
+        run: |
+          pnpm verify:phase2
+          pnpm verify:task09
+          pnpm verify:task10
+          pnpm verify:task11
+          pnpm verify:task12
+          pnpm verify:task13
+          pnpm verify:task14
+          pnpm verify:task15
+          pnpm verify:task16
+          pnpm verify:task17
+          pnpm verify:task18
+          pnpm verify:task19
+          pnpm verify:task20
+      - run: pnpm turbo lint
+      - run: pnpm turbo type-check
+
+  test:
+    name: Unit and integration tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: AgenticCRM-main
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: crm
+          POSTGRES_PASSWORD: crm
+          POSTGRES_DB: wacrm_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    env:
+      DATABASE_URL: postgresql://crm:crm@localhost:5432/wacrm_test?schema=public
+      DIRECT_DATABASE_URL: postgresql://crm:crm@localhost:5432/wacrm_test?schema=public
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: ci-test-secret-32chars-padding-xx
+      REFRESH_TOKEN_SECRET: ci-test-refresh-secret-32chars-xx
+      ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000001
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: AgenticCRM-main/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - name: Enable pgvector
+        run: PGPASSWORD=crm psql -h localhost -U crm -d wacrm_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
+      - name: Push Prisma schema
+        run: pnpm --filter @wacrm/database db:push
+      - name: Apply vector indexes
+        run: PGPASSWORD=crm psql -h localhost -U crm -d wacrm_test -f packages/database/prisma/migrations/manual_pgvector.sql
+      - run: pnpm turbo test
+
+  build:
+    name: Build all workspaces
+    runs-on: ubuntu-latest
+    needs: [lint-and-type-check, test]
+    defaults:
+      run:
+        working-directory: AgenticCRM-main
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: AgenticCRM-main/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo build
