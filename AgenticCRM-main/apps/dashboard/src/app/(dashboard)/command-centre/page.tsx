@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Activity, Bot, Boxes, BriefcaseBusiness, CircleDot, ExternalLink,
-  Layers3, Maximize2, MessageSquare, Package, Radio, RefreshCw, Users, Workflow, X,
+  Layers3, Maximize2, MessageSquare, Radio, RefreshCw, Users, Workflow, X,
 } from 'lucide-react';
 import api from '@/lib/api-client';
 import { getSocket } from '@/hooks/use-socket';
