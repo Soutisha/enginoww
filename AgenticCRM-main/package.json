@@ -34,6 +34,7 @@
     "verify:task18": "node scripts/verify-task18.mjs",
     "verify:task19": "node scripts/verify-task19.mjs",
     "verify:task20": "node scripts/verify-task20.mjs",
+    "verify:openai": "node scripts/verify-openai-only.mjs",
     "security:audit": "node scripts/security-audit.mjs",
     "smoke:test": "node scripts/smoke-test.mjs",
     "db:seed-demo": "pnpm --filter @wacrm/database exec tsx ../../scripts/seed-demo.ts"
