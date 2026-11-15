@@ -353,16 +353,18 @@ export class CompanyService {
       });
       if (!actor) throw new ForbiddenException('A workspace administrator is required');
 
-      const [contacts, leads, deals, products, demoAccounts] = await Promise.all([
+      const [contacts, leads, deals, tasks, products, demoAccounts] = await Promise.all([
         tx.contact.findMany({ where: { companyId, tags: { has: DEMO_MARKER } }, select: { id: true } }),
         tx.lead.findMany({ where: { companyId, tags: { has: DEMO_MARKER } }, select: { id: true } }),
         tx.deal.findMany({ where: { companyId, tags: { has: DEMO_MARKER } }, select: { id: true } }),
+        tx.task.findMany({ where: { companyId, tags: { has: DEMO_MARKER } }, select: { id: true } }),
         tx.product.findMany({ where: { companyId, tags: { has: DEMO_MARKER } }, select: { id: true } }),
         tx.whatsAppAccount.findMany({ where: { companyId, provider: DEMO_PROVIDER }, select: { id: true } }),
       ]);
       const contactIds = contacts.map((item) => item.id);
       const leadIds = leads.map((item) => item.id);
       const dealIds = deals.map((item) => item.id);
+      const taskIds = tasks.map((item) => item.id);
       const productIds = products.map((item) => item.id);
       const accountIds = demoAccounts.map((item) => item.id);
 
@@ -400,6 +402,16 @@ export class CompanyService {
         productIds.length ? tx.dealLineItem.count({ where: { companyId, productId: { in: productIds }, deal: { NOT: { tags: { has: DEMO_MARKER } } } } }) : 0,
         productIds.length ? tx.quoteLineItem.count({ where: { productId: { in: productIds }, quote: { NOT: { tags: { has: DEMO_MARKER } } } } }) : 0,
         productIds.length ? tx.invoiceLineItem.count({ where: { productId: { in: productIds }, invoice: { NOT: { tags: { has: DEMO_MARKER } } } } }) : 0,
+        taskIds.length ? tx.taskActivity.count({ where: { companyId, taskId: { in: taskIds } } }) : 0,
+        taskIds.length ? tx.taskComment.count({ where: { companyId, taskId: { in: taskIds } } }) : 0,
+        taskIds.length ? tx.taskWatcher.count({ where: { companyId, taskId: { in: taskIds } } }) : 0,
+        leadIds.length ? tx.leadActivity.count({ where: { companyId, leadId: { in: leadIds } } }) : 0,
+        leadIds.length ? tx.leadScoreEvent.count({ where: { companyId, leadId: { in: leadIds } } }) : 0,
+        dealIds.length ? tx.dealActivity.count({ where: { companyId, dealId: { in: dealIds } } }) : 0,
+        productIds.length ? tx.productActivity.count({ where: { companyId, productId: { in: productIds } } }) : 0,
+        [...contactIds, ...leadIds, ...dealIds, ...productIds].length
+          ? tx.activityLog.count({ where: { companyId, entityId: { in: [...contactIds, ...leadIds, ...dealIds, ...productIds] } } })
+          : 0,
       ]);
       if (references.some((count) => count > 0)) {
         throw new BadRequestException(
