@@ -12,7 +12,7 @@
  * Both functions are pure and deterministic — no DB or network access.
  */
 
-const TOKEN_RE = /[\p{L}\p{N}_]+/gu;
+const TOKEN_RE = /[\p{L}\p{M}\p{N}_]+/gu;
 
 const STOP_WORDS = new Set<string>([
   // Articles / determiners
@@ -39,7 +39,7 @@ const STOP_WORDS = new Set<string>([
 ]);
 
 /**
- * Tokenize the raw query using a Unicode word regex (mirrors OpenClaw).
+ * Tokenize the raw query using Unicode letters, combining marks and numbers. Combining marks keep Indic-script graphemes intact.
  * Does NOT lowercase — that's the caller's job (the `simple` tsvector config
  * already lowercases on the column side, so the query side must match).
  */
