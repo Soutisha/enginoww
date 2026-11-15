@@ -137,17 +137,7 @@ export function normalizeAttachments(
 
 const VISION_MODEL_KEYWORDS = [
   // OpenAI
-  'gpt-4o', 'gpt-4.1', 'gpt-5', 'o3', 'o4', '-vision',
-  // Anthropic — every Claude 3+ supports vision
-  'claude-3', 'claude-4', 'claude-opus-4', 'claude-sonnet-4', 'claude-haiku-4',
-  // Google
-  'gemini-1.5', 'gemini-2', 'gemini-3', 'gemini-pro-vision',
-  // xAI
-  'grok-2-vision', 'grok-4',
-  // Llama 3.2 multimodal
-  'llama-3.2', 'llama-4',
-  // Qwen vision
-  'qwen-vl', 'qwen-2.5-vl',
+  'gpt-5.4', 'gpt-5.5', '-vision',
 ];
 
 export function modelSupportsImages(model: string): boolean {
@@ -222,25 +212,4 @@ export function buildOpenAIContent(
   return blocks;
 }
 
-/**
- * Build the Anthropic content blocks for a user message with images.
- * Anthropic uses a different schema: `{type:"image", source:{type:"base64", media_type, data}}`.
- */
-export function buildAnthropicContent(
-  textContent: string,
-  attachments: ChatAttachment[],
-  dropImages: boolean,
-): string | Array<Record<string, unknown>> {
-  const images = dropImages ? [] : attachments.filter((a) => a.kind === 'image' && a.dataBase64);
-  if (images.length === 0) return textContent;
 
-  const blocks: Array<Record<string, unknown>> = [];
-  for (const img of images) {
-    blocks.push({
-      type: 'image',
-      source: { type: 'base64', media_type: img.mimeType, data: img.dataBase64 },
-    });
-  }
-  blocks.push({ type: 'text', text: textContent });
-  return blocks;
-}
