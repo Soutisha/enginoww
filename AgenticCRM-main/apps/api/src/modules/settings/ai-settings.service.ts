@@ -93,6 +93,9 @@ export class AiSettingsService implements OnModuleInit {
         `Migrated ${migrated} AI workspace configuration(s) to OpenAI-only. Non-OpenAI keys were cleared; add an OpenAI API key in Settings → AI.`,
       );
     }
+    this.logger.log(
+      `OpenAI-only startup check complete: inspected ${configs.length} workspace AI configuration(s), migrated ${migrated}.`,
+    );
   }
 
   async get(companyId: string) {
