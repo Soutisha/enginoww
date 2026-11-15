@@ -27,10 +27,13 @@ async function bootstrap() {
 
   // ── Security ───────────────────────────────────────────────────────────────
   app.use(helmet());
+  const configuredCorsOrigins = (process.env.CORS_ORIGINS || `https://${process.env.DOMAIN}`)
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
   app.enableCors({
-    origin: process.env.NODE_ENV === 'production'
-      ? [`https://${process.env.DOMAIN}`]
-      : true,
+    origin: process.env.NODE_ENV === 'production' ? configuredCorsOrigins : true,
     credentials: true,
   });
 
