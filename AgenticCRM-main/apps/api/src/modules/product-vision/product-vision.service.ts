@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { prisma } from '@wacrm/database';
 import { decrypt } from '@wacrm/shared';
-import { PROVIDER_BASE_URLS } from '../settings/ai-settings.service';
+import { OPENAI_MODELS } from '../settings/ai-settings.service';
 
 export interface ProductVisionResult {
   name: string;
@@ -29,23 +29,17 @@ export class ProductVisionService {
     }
 
     const config = await prisma.aiConfig.findUnique({ where: { companyId } });
-    if (!config?.apiKeyEncrypted) {
-      throw new ServiceUnavailableException('Configure an AI provider and API key in Settings → AI before using Product Intelligence');
+    if (config && config.provider !== 'OPENAI') {
+      throw new ServiceUnavailableException('Connect OpenAI in Settings → AI before using Product Intelligence.');
     }
-
-    const provider = String(config.provider);
-    const model = config.model;
-    const apiKey = decrypt(config.apiKeyEncrypted);
-    const baseUrl = provider === 'GEMINI'
-      ? 'https://generativelanguage.googleapis.com/v1beta/openai'
-      : provider === 'OPENAI'
-        ? 'https://api.openai.com/v1'
-        : PROVIDER_BASE_URLS[config.provider as keyof typeof PROVIDER_BASE_URLS];
-
-    if (!baseUrl || !this.supportsVision(provider, model)) {
-      throw new BadRequestException(
-        `The configured ${provider} model (${model}) is not enabled for image analysis. Select a vision-capable OpenAI or Gemini model in Settings → AI.`,
-      );
+    const model = config?.model && OPENAI_MODELS.includes(config.model)
+      ? config.model
+      : 'gpt-5.4-mini';
+    const apiKey = config?.apiKeyEncrypted
+      ? decrypt(config.apiKeyEncrypted)
+      : process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new ServiceUnavailableException('Add an OpenAI API key in Settings → AI before using Product Intelligence.');
     }
 
     const dataUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
@@ -58,13 +52,14 @@ export class ProductVisionService {
       'imageQuality must be good, fair, or poor. Add warnings for ambiguity, occlusion, low resolution, or uncertain identification.',
     ].join(' ');
 
-    const response = await fetch(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
         model,
         temperature: 0.1,
-        max_tokens: 1200,
+        max_completion_tokens: 1200,
+        reasoning_effort: 'none',
         response_format: { type: 'json_object' },
         messages: [{
           role: 'user',
@@ -87,14 +82,14 @@ export class ProductVisionService {
 
     const payload = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
     const content = payload.choices?.[0]?.message?.content;
-    if (!content) throw new ServiceUnavailableException('The AI provider returned an empty image analysis');
+    if (!content) throw new ServiceUnavailableException('OpenAI returned an empty image analysis');
 
     let parsed: Partial<ProductVisionResult>;
     try {
       const clean = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
       parsed = JSON.parse(clean) as Partial<ProductVisionResult>;
     } catch {
-      throw new ServiceUnavailableException('The AI provider returned an invalid structured response. Please retry.');
+      throw new ServiceUnavailableException('OpenAI returned an invalid structured response. Please retry.');
     }
 
     return {
@@ -113,14 +108,6 @@ export class ProductVisionService {
     };
   }
 
-  private supportsVision(provider: string, model: string): boolean {
-    const m = model.toLowerCase();
-    if (provider === 'GEMINI') return m.includes('gemini');
-    if (provider === 'OPENAI') return /gpt-4o|gpt-4\.1|gpt-5|o[34]-mini/.test(m);
-    // Other providers may expose vision through custom model aliases, but cannot be
-    // safely inferred from their provider/model setting.
-    return false;
-  }
 
   private safeText(value: unknown, max: number): string {
     return typeof value === 'string' ? value.trim().slice(0, max) : '';
