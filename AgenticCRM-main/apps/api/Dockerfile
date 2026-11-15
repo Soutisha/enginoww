@@ -36,14 +36,16 @@ RUN pnpm turbo build --filter=@wacrm/api
 
 FROM node:22-alpine AS runner
 RUN apk update && apk upgrade && \
-    apk add --no-cache libc6-compat git docker-cli docker-cli-compose curl bash
+    apk add --no-cache libc6-compat git docker-cli docker-cli-compose curl bash postgresql-client
 WORKDIR /app
 
 RUN npm install -g prisma@7.7.0
 
 COPY --from=installer /app ./
+COPY apps/api/render-start.sh ./apps/api/render-start.sh
+RUN chmod +x ./apps/api/render-start.sh
 # Run as root — the update system needs docker.sock + git write access,
 # and docker.sock access is root-equivalent anyway (no security benefit
 # from dropping privileges when the socket is mounted).
 EXPOSE 3000
-CMD ["node", "apps/api/dist/apps/api/src/main.js"]
+CMD ["/app/apps/api/render-start.sh"]
