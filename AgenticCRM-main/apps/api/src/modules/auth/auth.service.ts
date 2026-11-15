@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import bcrypt from 'bcryptjs';
@@ -41,6 +42,9 @@ export class AuthService {
 
   async register(dto: RegisterDto): Promise<AuthTokens> {
     const slug = dto.companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    if (!slug) {
+      throw new BadRequestException('Workspace name must contain at least one letter or number');
+    }
 
     const existing = await prisma.company.findUnique({ where: { slug } });
     if (existing) {
@@ -49,32 +53,35 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
-    const company = await prisma.company.create({
-      data: {
-        name: dto.companyName,
-        slug,
-        email: dto.email,
-        setupDone: false,
-        // Seed default AI + payment configs alongside company creation
-        aiConfig: {
-          create: { autoReplyEnabled: false },
+    // Create the company, its default configuration and its first admin user
+    // in one transaction. A failed signup must not leave an orphan workspace.
+    const user = await prisma.$transaction(async (tx) => {
+      const company = await tx.company.create({
+        data: {
+          name: dto.companyName,
+          slug,
+          email: dto.email,
+          setupDone: false,
+          aiConfig: {
+            create: { autoReplyEnabled: false },
+          },
+          paymentConfig: {
+            create: {},
+          },
         },
-        paymentConfig: {
-          create: {},
-        },
-      },
-    });
+      });
 
-    const user = await prisma.user.create({
-      data: {
-        companyId: company.id,
-        email: dto.email,
-        passwordHash,
-        firstName: dto.firstName,
-        lastName: dto.lastName,
-        role: 'ADMIN',
-        isActive: true,
-      },
+      return tx.user.create({
+        data: {
+          companyId: company.id,
+          email: dto.email,
+          passwordHash,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          role: 'ADMIN',
+          isActive: true,
+        },
+      });
     });
 
     return this.issueTokens(user);
