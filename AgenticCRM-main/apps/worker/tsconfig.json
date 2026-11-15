@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "../..",
+    "outDir": "dist",
+    "paths": {
+      "@wacrm/database": ["../../packages/database/src/index.ts"],
+      "@wacrm/shared": ["../../packages/shared/src/index.ts"],
+      "@wacrm/sequences": ["../../apps/api/src/modules/sequences/index.ts"]
+    }
+  },
+  "include": ["src/**/*"]
+}

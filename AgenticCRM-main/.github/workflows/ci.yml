@@ -1,0 +1,170 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  lint-and-type-check:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Verify implementation roadmap tasks
+        run: |
+          pnpm verify:phase2
+          pnpm verify:task09
+          pnpm verify:task10
+          pnpm verify:task11
+          pnpm verify:task12
+          pnpm verify:task13
+          pnpm verify:task14
+          pnpm verify:task15
+          pnpm verify:task16
+          pnpm verify:task17
+          pnpm verify:task18
+          pnpm verify:task19
+          pnpm verify:task20
+      - run: pnpm turbo lint
+      - run: pnpm turbo type-check
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        # pgvector image (Postgres 16 + pgvector extension preinstalled).
+        # The schema uses Unsupported("vector(1536)") on MemoryChunk, so plain
+        # postgres:16 fails `prisma db push` with "type vector does not exist".
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: crm
+          POSTGRES_PASSWORD: crm
+          POSTGRES_DB: wacrm_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    env:
+      DATABASE_URL: postgresql://crm:crm@localhost:5432/wacrm_test?schema=public
+      DIRECT_DATABASE_URL: postgresql://crm:crm@localhost:5432/wacrm_test?schema=public
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: ci-test-secret-32chars-padding-xx
+      REFRESH_TOKEN_SECRET: ci-test-refresh-secret-32chars-xx
+      ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000001
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      # Enable pgvector extension before pushing the schema — the MemoryChunk
+      # model declares an `Unsupported("vector(1536)")` column and Prisma's
+      # CREATE TABLE will fail otherwise.
+      - name: Enable pgvector extension
+        run: |
+          PGPASSWORD=crm psql -h localhost -U crm -d wacrm_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
+      - run: pnpm db:push
+      # Apply the manual pgvector migration (vector column + tsvector + indexes).
+      - name: Apply pgvector migration
+        run: |
+          PGPASSWORD=crm psql -h localhost -U crm -d wacrm_test -f packages/database/prisma/migrations/manual_pgvector.sql
+      - run: pnpm turbo test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint-and-type-check]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo build
+
+  docker:
+    name: Docker Build & Push
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set lowercase repository name
+        run: echo "REPO_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+      - name: Build and push API
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: ghcr.io/${{ env.REPO_LOWER }}/api:latest,ghcr.io/${{ env.REPO_LOWER }}/api:${{ github.sha }}
+          build-args: |
+            GIT_HASH=${{ github.sha }}
+            GIT_DATE=${{ github.event.head_commit.timestamp }}
+            GIT_BRANCH=${{ github.ref_name }}
+            APP_VERSION=1.0.0
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build and push Worker
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/worker/Dockerfile
+          push: true
+          tags: ghcr.io/${{ env.REPO_LOWER }}/worker:latest,ghcr.io/${{ env.REPO_LOWER }}/worker:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build and push WhatsApp
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/whatsapp/Dockerfile
+          push: true
+          tags: ghcr.io/${{ env.REPO_LOWER }}/whatsapp:latest,ghcr.io/${{ env.REPO_LOWER }}/whatsapp:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build and push Dashboard
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/dashboard/Dockerfile
+          push: true
+          tags: ghcr.io/${{ env.REPO_LOWER }}/dashboard:latest,ghcr.io/${{ env.REPO_LOWER }}/dashboard:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

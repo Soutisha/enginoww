@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>AgenticCRM — The agentic CRM, fully controlled by AI chat</title>
+  <meta name="description" content="AgenticCRM is a self-hosted, open-source agentic CRM — your entire pipeline, leads, deals, quotes, invoices, and payments, controlled by an AI chat agent. A Sapheron Project by TechnoTaLim Platform and Services LLP." />
+  <meta name="keywords" content="agentic CRM, AI CRM, self-hosted CRM, WhatsApp CRM, open source CRM, AI sales agent, AI chat CRM, Sapheron, TechnoTaLim, Baileys, NestJS CRM, Next.js CRM, AI agent, lead management, deal pipeline, chat-driven CRM, self-hosted WhatsApp" />
+  <meta name="author" content="Sapheron · TechnoTaLim Platform and Services LLP" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+  <meta name="theme-color" content="#0f0f10" />
+  <meta name="application-name" content="AgenticCRM" />
+  <meta name="apple-mobile-web-app-title" content="AgenticCRM" />
+  <meta name="format-detection" content="telephone=no" />
+  <link rel="canonical" href="https://agenticcrm.sapheron.com/" />
+
+  <!-- Open Graph -->
+  <meta property="og:site_name" content="AgenticCRM" />
+  <meta property="og:title" content="AgenticCRM — The agentic CRM, fully controlled by AI chat" />
+  <meta property="og:description" content="Self-hosted, open-source. One curl to install. Your CRM runs itself: leads, deals, quotes, invoices, payments — all driven by an AI chat agent." />
+  <meta property="og:url" content="https://agenticcrm.sapheron.com/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:image" content="https://agenticcrm.sapheron.com/assets/full_logo.png" />
+  <meta property="og:image:alt" content="AgenticCRM — A Sapheron Project" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="AgenticCRM — The agentic CRM, fully controlled by AI chat" />
+  <meta name="twitter:description" content="Self-hosted, open-source agentic CRM. One curl to install. Controlled entirely by AI chat." />
+  <meta name="twitter:image" content="https://agenticcrm.sapheron.com/assets/full_logo.png" />
+  <meta name="twitter:image:alt" content="AgenticCRM — A Sapheron Project" />
+
+  <link rel="icon" href="/assets/logo.png" type="image/png" />
+  <link rel="apple-touch-icon" href="/assets/logo.png" />
+
+  <!-- JSON-LD structured data for search engines -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "AgenticCRM",
+        "alternateName": "Agentic CRM",
+        "description": "Self-hosted, open-source agentic CRM fully controlled by an AI chat agent. Manages contacts, leads, deals, quotes, invoices, and payments.",
+        "url": "https://agenticcrm.sapheron.com/",
+        "image": "https://agenticcrm.sapheron.com/assets/full_logo.png",
+        "applicationCategory": "BusinessApplication",
+        "applicationSubCategory": "CRM",
+        "operatingSystem": "Linux, macOS, Windows (via Docker)",
+        "softwareVersion": "1.4.1",
+        "license": "https://github.com/Sapheron/AgenticCRM/blob/main/LICENSE",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "author": {
+          "@type": "Organization",
+          "name": "Sapheron",
+          "url": "https://sapheron.com"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "TechnoTaLim Platform and Services LLP",
+          "url": "https://technotalim.com"
+        },
+        "codeRepository": "https://github.com/Sapheron/AgenticCRM"
+      },
+      {
+        "@type": "Organization",
+        "name": "Sapheron",
+        "url": "https://sapheron.com",
+        "parentOrganization": {
+          "@type": "Organization",
+          "name": "TechnoTaLim Platform and Services LLP",
+          "url": "https://technotalim.com"
+        }
+      },
+      {
+        "@type": "WebSite",
+        "url": "https://agenticcrm.sapheron.com/",
+        "name": "AgenticCRM",
+        "publisher": { "@type": "Organization", "name": "Sapheron" }
+      }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+          },
+          colors: {
+            ink: { DEFAULT: '#0f0f10', soft: '#1a1a1c' },
+            paper: '#FAFAF9',
+            line: '#E6E6E6',
+            muted: '#757575',
+          },
+          borderRadius: { DEFAULT: '6px' },
+          fontSize: { 'xxs': '10px' },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+      background: #FAFAF9;
+      color: #0f0f10;
+      font-size: 14px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    .code-font { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+    /* Grid paper background for hero */
+    .grid-bg {
+      background-image:
+        linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      background-position: -1px -1px;
+    }
+    /* Subtle radial glow on dark hero */
+    .hero-glow::before {
+      content: '';
+      position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(600px 300px at 50% 0%, rgba(255,255,255,0.06), transparent 70%);
+    }
+    .tab-active { background: #0f0f10; color: #fff; }
+    .tab-inactive { background: transparent; color: #0f0f10; }
+    .fade-in { animation: fadeIn 0.35s ease forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    /* Chat bubble styling */
+    .bubble-user { background: #f3f4f6; border-radius: 12px 12px 12px 2px; }
+    .bubble-ai { background: #ecfdf5; border-radius: 12px 12px 2px 12px; border-left: 2px solid #10b981; }
+
+    /* Hide horizontal scroll on small devices */
+    body { overflow-x: hidden; }
+  </style>
+</head>
+<body class="bg-paper text-ink">
+
+  <!-- ─── NAV ───────────────────────────────────────────────── -->
+  <nav class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-line">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-[72px] flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2">
+        <img src="/assets/headerlogo.png" alt="AgenticCRM" class="h-9 sm:h-11 w-auto" />
+      </a>
+      <div class="flex items-center gap-3 sm:gap-5 text-[13px]">
+        <a href="#screenshots" class="hidden sm:inline text-gray-700 hover:text-ink transition">Preview</a>
+        <a href="#install" class="hidden sm:inline text-gray-700 hover:text-ink transition">Install</a>
+        <a href="#features" class="hidden md:inline text-gray-700 hover:text-ink transition">Features</a>
+        <a href="#providers" class="hidden md:inline text-gray-700 hover:text-ink transition">AI Providers</a>
+        <a href="https://github.com/Sapheron/AgenticCRM" target="_blank" rel="noopener" class="flex items-center gap-1.5 text-gray-700 hover:text-ink transition">
+          <svg viewBox="0 0 24 24" class="w-4 h-4 fill-current"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.38 7.86 10.9.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.27-1.69-1.27-1.69-1.04-.7.08-.69.08-.69 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.69 1.25 3.35.95.1-.75.4-1.25.72-1.54-2.56-.3-5.25-1.28-5.25-5.7 0-1.26.45-2.29 1.18-3.09-.12-.3-.51-1.47.11-3.07 0 0 .96-.31 3.16 1.17a10.9 10.9 0 015.76 0c2.2-1.48 3.16-1.17 3.16-1.17.62 1.6.23 2.77.11 3.07.74.8 1.18 1.83 1.18 3.09 0 4.43-2.69 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.2.67.8.56A11.5 11.5 0 0023.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
+          <span class="hidden sm:inline">GitHub</span>
+        </a>
+        <span class="hidden sm:inline-flex items-center px-2 h-6 rounded-full border border-line text-muted text-xxs code-font">v1.4.1</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ─── HERO ──────────────────────────────────────────────── -->
+  <section class="relative bg-ink text-white overflow-hidden hero-glow">
+    <div class="absolute inset-0 grid-bg opacity-70"></div>
+    <div class="relative max-w-6xl mx-auto px-4 sm:px-6 pt-16 pb-20 sm:pt-24 sm:pb-28 text-center">
+
+      <!-- Changelog pill -->
+      <a href="https://github.com/Sapheron/AgenticCRM/releases" target="_blank" rel="noopener"
+         class="inline-flex items-center gap-2 px-3 h-7 rounded-full border border-white/15 bg-white/5 text-[11px] text-white/70 hover:bg-white/10 transition">
+        <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+        <span>New: v1.4.1 · Resilient updater with auto-rollback</span>
+        <span class="text-white/40">→</span>
+      </a>
+
+      <h1 class="mt-7 text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight leading-[1.05] max-w-4xl mx-auto">
+        The agentic CRM.<br class="hidden sm:block" />
+        <span class="text-white/60">Fully controlled by AI chat.</span>
+      </h1>
+
+      <p class="mt-6 text-[15px] sm:text-base text-white/65 max-w-2xl mx-auto leading-relaxed">
+        A self-hosted CRM your AI agent runs end-to-end — contacts, leads, deals, quotes, invoices, payments.
+        Chat with it from WhatsApp today; Telegram, SMS and more channels ship next.
+      </p>
+
+      <!-- Brand line: Sapheron highlighted, parent company subtle below -->
+      <div class="mt-6 flex flex-col items-center gap-1">
+        <a href="https://sapheron.com" target="_blank" rel="noopener"
+           class="group inline-flex items-center gap-2 px-3.5 h-8 rounded-full bg-white/10 border border-white/15 hover:bg-white/15 hover:border-white/25 transition">
+          <span class="text-[11px] code-font text-white/50 tracking-wider">A</span>
+          <span class="text-[13px] font-semibold text-white tracking-tight">Sapheron</span>
+          <span class="text-[11px] code-font text-white/50 tracking-wider">PROJECT</span>
+        </a>
+        <a href="https://technotalim.com" target="_blank" rel="noopener"
+           class="text-[11px] text-white/40 hover:text-white/70 transition">
+          TechnoTaLim Platform and Services LLP
+        </a>
+      </div>
+
+      <!-- CTAs -->
+      <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <a href="#install"
+           class="inline-flex items-center justify-center gap-2 px-5 h-11 rounded-md bg-white text-ink font-medium text-sm hover:bg-white/90 transition w-full sm:w-auto">
+          Install in one command
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a href="https://github.com/Sapheron/AgenticCRM" target="_blank" rel="noopener"
+           class="inline-flex items-center justify-center gap-2 px-5 h-11 rounded-md border border-white/20 text-white/90 font-medium text-sm hover:bg-white/5 transition w-full sm:w-auto">
+          View on GitHub
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M7 7h10v10" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+
+      <!-- Trust line -->
+      <p class="mt-7 text-[11px] text-white/40 code-font">
+        MIT LICENSED · SELF-HOSTED · ONE CURL TO INSTALL
+      </p>
+    </div>
+  </section>
+
+  <!-- ─── DISCLAIMER STRIP ──────────────────────────────────── -->
+  <div class="bg-amber-50 border-y border-amber-200">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 text-center text-[12.5px] text-amber-900">
+      <span class="mr-1">⚠️</span>
+      <span class="font-medium">Early software.</span>
+      You'll find bugs — we treat them as features.
+      <a href="https://github.com/Sapheron/AgenticCRM/issues" target="_blank" rel="noopener" class="underline decoration-amber-400 underline-offset-2 hover:text-amber-950 font-medium">Found one that's not? Report it →</a>
+    </div>
+  </div>
+
+  <!-- ─── SCREENSHOTS ───────────────────────────────────────── -->
+  <section id="screenshots" class="py-16 sm:py-24 border-b border-line bg-paper">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-14 sm:mb-16">
+        <p class="text-[11px] code-font text-muted uppercase tracking-wider mb-3">SEE IT IN ACTION</p>
+        <h2 class="text-2xl sm:text-3xl font-semibold tracking-tight">A real product. Not a mockup.</h2>
+        <p class="mt-3 text-sm text-gray-600 max-w-xl mx-auto">
+          The dashboard you install today. Built for operators, not demos.
+        </p>
+      </div>
+
+      <!-- Row 1: Analytics screenshot + caption -->
+      <div class="grid lg:grid-cols-5 gap-8 lg:gap-14 items-center mb-16 sm:mb-24">
+        <div class="lg:col-span-3 order-2 lg:order-1 min-w-0">
+          <figure class="rounded-lg border border-line bg-white shadow-2xl shadow-black/10 overflow-hidden ring-1 ring-black/5">
+            <figcaption class="flex items-center gap-1.5 px-4 py-2.5 border-b border-line bg-white/80 backdrop-blur">
+              <span class="w-2.5 h-2.5 rounded-full bg-gray-200 flex-shrink-0"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-gray-200 flex-shrink-0"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-gray-200 flex-shrink-0"></span>
+              <span class="ml-3 text-[11px] code-font text-muted truncate min-w-0 flex-1">agenticcrm.local / analytics</span>
+            </figcaption>
+            <img src="/assets/ss1.png" alt="AgenticCRM analytics dashboard with KPI cards, revenue trend, deal pipeline, lead funnel and agent performance"
+                 class="block w-full h-auto max-w-full" loading="lazy" decoding="async" />
+          </figure>
+        </div>
+        <div class="lg:col-span-2 order-1 lg:order-2 min-w-0">
+          <p class="text-[11px] code-font text-muted uppercase tracking-wider mb-3">01 · ANALYTICS</p>
+          <h3 class="text-xl sm:text-2xl font-semibold tracking-tight mb-3 leading-snug">
+            One board. Every number that matters.
+          </h3>
+          <p class="text-sm text-gray-600 leading-relaxed">
+            Contacts, active leads, pipeline value, revenue, open tickets, messages — all on one board.
+            No add-ons, no upgrade gates. Every chart is first-class, time-range aware, and refetches on focus.
+          </p>
+          <ul class="mt-5 space-y-1.5 text-[12.5px] text-gray-700">
+            <li class="flex gap-2"><span class="text-emerald-600 font-semibold flex-shrink-0">✓</span><span class="min-w-0 break-words">6 KPI cards · 7 / 30 / 90-day ranges</span></li>
+            <li class="flex gap-2"><span class="text-emerald-600 font-semibold flex-shrink-0">✓</span><span class="min-w-0 break-words">Revenue trend, lead funnel, deal pipeline, lead sources</span></li>
+            <li class="flex gap-2"><span class="text-emerald-600 font-semibold flex-shrink-0">✓</span><span class="min-w-0 break-words">Agent performance leaderboard — deals, tickets, msgs</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Row 2: Caption + AI Assistant screenshot -->
+      <div class="grid lg:grid-cols-5 gap-8 lg:gap-14 items-center">
+        <div class="lg:col-span-2 min-w-0">
+          <p class="text-[11px] code-font text-muted uppercase tracking-wider mb-3">02 · AI ASSISTANT</p>
+          <h3 class="text-xl sm:text-2xl font-semibold tracking-tight mb-3 leading-snug">
+            Run the CRM from a chat thread.
+          </h3>
+          <p class="text-sm text-gray-600 leading-relaxed">
+            Ask the AI to find a contact, update a field, list deals, or add a note —
+            you see the exact tool it invoked, the inputs it used, and the result it returned.
+            Transparent by design.
+          </p>
+          <ul class="mt-5 space-y-1.5 text-[12.5px] text-gray-700">
+            <li class="flex gap-2"><span class="text-emerald-600 font-semibold flex-shrink-0">✓</span><span class="min-w-0 break-words">Tool calls rendered inline — every step is auditable</span></li>
+            <li class="flex gap-2"><span class="text-emerald-600 font-semibold flex-shrink-0">✓</span><span class="min-w-0 break-words">Swap models per thread — 15 providers supported</span></li>
+            <li class="flex gap-2"><span class="text-emerald-600 font-semibold flex-shrink-0">✓</span><span class="min-w-0 break-words">Same agent logic powers the WhatsApp channel</span></li>
+          </ul>
+        </div>
+        <div class="lg:col-span-3 min-w-0">
+          <figure class="rounded-lg border border-line bg-white shadow-2xl shadow-black/10 overflow-hidden ring-1 ring-black/5">
+            <figcaption class="flex items-center gap-1.5 px-4 py-2.5 border-b border-line bg-white/80 backdrop-blur">
+              <span class="w-2.5 h-2.5 rounded-full bg-gray-200 flex-shrink-0"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-gray-200 flex-shrink-0"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-gray-200 flex-shrink-0"></span>
+              <span class="ml-3 text-[11px] code-font text-muted truncate min-w-0 flex-1">agenticcrm.local / ai-chat</span>
+            </figcaption>
+            <img src="/assets/ss2.png" alt="AgenticCRM AI Assistant chat showing tool calls for search_contacts, update_contact, and list_deals"
+                 class="block w-full h-auto max-w-full" loading="lazy" decoding="async" />
+          </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── INSTALL ───────────────────────────────────────────── -->
+  <section id="install" class="py-16 sm:py-24 border-b border-line">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-10">
+        <p class="text-[11px] code-font text-muted uppercase tracking-wider mb-3">QUICK INSTALL</p>
+        <h2 class="text-2xl sm:text-3xl font-semibold tracking-tight">One command. Every service.</h2>
+        <p class="mt-3 text-sm text-gray-600 max-w-xl mx-auto">
+          The installer builds images, generates secrets, runs migrations, starts 11 services, and patches nginx timeouts.
+        </p>
+      </div>
+
+      <!-- Install command -->
+      <div class="mx-auto max-w-2xl">
+        <div class="relative">
+          <div class="bg-ink rounded-md overflow-hidden border border-ink">
+            <div class="flex items-center justify-between px-4 py-2 border-b border-white/10">
+              <span class="text-[11px] text-white/40 code-font">bash · Linux VPS</span>
+              <button onclick="copyCmd()" id="copy-cmd"
+                      class="flex items-center gap-1.5 text-[11px] text-white/60 hover:text-white transition code-font">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                <span id="copy-cmd-label">COPY</span>
+              </button>
+            </div>
+            <pre class="px-4 py-4 sm:py-5 text-[13px] sm:text-[14px] text-gray-100 code-font overflow-x-auto"><span class="text-emerald-400 select-none">$ </span><span id="cmd-text">curl -fsSL https://agenticcrm.sapheron.com/install.sh | sudo bash</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Requirements -->
+      <div class="mt-10 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-2xl mx-auto text-[12px]">
+        <div class="bg-white border border-line rounded-md p-3 text-center">
+          <div class="text-muted code-font text-[10px] uppercase tracking-wider">RAM</div>
+          <div class="font-medium mt-0.5">4 GB min</div>
+        </div>
+        <div class="bg-white border border-line rounded-md p-3 text-center">
+          <div class="text-muted code-font text-[10px] uppercase tracking-wider">Disk</div>
+          <div class="font-medium mt-0.5">10 GB+</div>
+        </div>
+        <div class="bg-white border border-line rounded-md p-3 text-center">
+          <div class="text-muted code-font text-[10px] uppercase tracking-wider">Docker</div>
+          <div class="font-medium mt-0.5">20.10+</div>
+        </div>
+        <div class="bg-white border border-line rounded-md p-3 text-center">
+          <div class="text-muted code-font text-[10px] uppercase tracking-wider">OS</div>
+          <div class="font-medium mt-0.5">Ubuntu 22.04+</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FEATURES ──────────────────────────────────────────── -->
+  <section id="features" class="py-16 sm:py-24 border-b border-line">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-12">
+        <p class="text-[11px] code-font text-muted uppercase tracking-wider mb-3">EVERYTHING INCLUDED</p>
+        <h2 class="text-2xl sm:text-3xl font-semibold tracking-tight">A full CRM. Run by an AI. Over WhatsApp.</h2>
+        <p class="mt-3 text-sm text-gray-600 max-w-xl mx-auto">
+          No add-ons, no tiers. The entire stack — from conversation to payment — comes in one Docker deploy.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <!-- 1 WhatsApp AI Agent -->
+        <div class="bg-white border border-line rounded-md p-5 hover:shadow-sm hover:border-gray-300 transition">
+          <div class="w-8 h-8 rounded-md bg-ink text-white flex items-center justify-center mb-3">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          </div>
+          <h3 class="font-semibold text-[14px] mb-1.5">WhatsApp AI Agent</h3>
+          <p class="text-[12.5px] text-gray-600 leading-relaxed">8 registered tools, 5-iteration chains, circuit breaker with auto-escalation to a human.</p>
+        </div>
+
+        <!-- 2 Full CRM Pipeline -->
+        <div class="bg-white border border-line rounded-md p-5 hover:shadow-sm hover:border-gray-300 transition">
+          <div class="w-8 h-8 rounded-md bg-ink text-white flex items-center justify-center mb-3">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </div>
+          <h3 class="font-semibold text-[14px] mb-1.5">Full CRM Pipeline</h3>
+          <p class="text-[12.5px] text-gray-600 leading-relaxed">Contacts → Leads → Deals → Quotes → Invoices → Payments. One place, one graph.</p>
+        </div>
+
+        <!-- 3 Engagement Suite -->
+        <div class="bg-white border border-line rounded-md p-5 hover:shadow-sm hover:border-gray-300 transition">
+          <div class="w-8 h-8 rounded-md bg-ink text-white flex items-center justify-center mb-3">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 11l19-9-9 19-2-8z"/></svg>
+          </div>
+          <h3 class="font-semibold text-[14px] mb-1.5">Engagement Suite</h3>
+          <p class="text-[12.5px] text-gray-600 leading-relaxed">Broadcasts, campaigns, sequences, templates, and public intake forms.</p>
+        </div>
+
+        <!-- 4 Support Tools -->
+        <div class="bg-white border border-line rounded-md p-5 hover:shadow-sm hover:border-gray-300 transition">
+          <div class="w-8 h-8 rounded-md bg-ink text-white flex items-center justify-center mb-3">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M12 2a10 10 0 100 20 10 10 0 000-20z"/></svg>
+          </div>
+          <h3 class="font-semibold text-[14px] mb-1.5">Support Tools</h3>
+          <p class="text-[12.5px] text-gray-600 leading-relaxed">Tickets with SLA tracking, knowledge base, e-signature documents.</p>
+        </div>
+
+        <!-- 5 Analytics -->
+        <div class="bg-white border border-line rounded-md p-5 hover:shadow-sm hover:border-gray-300 transition">
+          <div class="w-8 h-8 rounded-md bg-ink text-white flex items-center justify-center mb-3">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 3v18h18M7 14l4-4 4 4 5-5"/></svg>
+          </div>
+          <h3 class="font-semibold text-[14px] mb-1.5">Analytics &amp; Reports</h3>
+          <p class="text-[12.5px] text-gray-600 leading-relaxed">Revenue trends, funnels, agent performance. Custom reports: table, chart, funnel, metric, cohort.</p>
+        </div>
+
+        <!-- 6 24/7 Uptime -->
+        <div class="bg-white border border-line rounded-md p-5 hover:shadow-sm hover:border-gray-300 transition">
+          <div class="w-8 h-8 rounded-md bg-ink text-white flex items-center justify-center mb-3">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6M3.5 9a9 9 0 0114.85-3.36L23 10M1 14l4.65 4.36A9 9 0 0020.5 15"/></svg>
+          </div>
+          <h3 class="font-semibold text-[14px] mb-1.5">24/7 Uptime</h3>
+          <p class="text-[12.5px] text-gray-600 leading-relaxed">Keepalive ping, auto-reconnect, stale watchdog, encrypted session persistence.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── AI PROVIDERS ──────────────────────────────────────── -->
+  <section id="providers" class="py-16 sm:py-20 border-b border-line bg-white">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 text-center">
+      <p class="text-[11px] code-font text-muted uppercase tracking-wider mb-3">15 AI PROVIDERS · ONE ABSTRACTION</p>
+      <h2 class="text-2xl sm:text-3xl font-semibold tracking-tight">
+        Plug in any model. Fallback chains included.
+      </h2>
+      <p class="mt-3 text-sm text-gray-600 max-w-xl mx-auto">
+        Configure a primary provider with up to 3 fallbacks. If one goes down, the next handles the turn.
+      </p>
+
+      <div class="mt-10 flex flex-wrap justify-center gap-2">
+        <span class="px-3 h-8 inline-flex items-center bg-paper border border-line rounded-full text-[12px] code-font text-gray-700">OpenAI</span>
+        <span class="px-3 h-8 inline-flex items-center bg-paper border border-line rounded-full text-[12px] code-font text-gray-700">Anthropic</span>
+        <span class="px-3 h-8 inline-flex items-center bg-paper border border-line rounded-full text-[12px] code-font text-gray-700">Gemini</span>
+        <span class="px-3 h-8 inline-flex items-center bg-paper border border-line rounded-full text-[12px] code-font text-gray-700">Groq</span>
+        <span class="px-3 h-8 inline-flex items-center bg-paper border border-line rounded-full text-[12px] code-font text-gray-700">DeepSeek</span>
+        <span class="px-3 h-8 inline-flex items-center bg-paper border border-line rounded-full text-[12px] code-font text-gray-700">xAI</span>
+        <span class="px-3 h-8 inline-flex items-center bg-paper border border-line rounded-full text-[12px] code-font text-gray-700">Mistral</span>
+        <span class="px-3 h-8 inline-flex items-center bg-paper border border-line rounded-full text-[12px] code-font text-gray-700">Moonshot</span>
+        <span class="px-3 h-8 inline-flex items-center bg-paper border border-line rounded-full text-[12px] code-font text-gray-700">GLM</span>
+        <span class="px-3 h-8 inline-flex items-center bg-paper border border-line rounded-full text-[12px] code-font text-gray-700">Qwen</span>
+        <span class="px-3 h-8 inline-flex items-center bg-paper border border-line rounded-full text-[12px] code-font text-gray-700">StepFun</span>
+        <span class="px-3 h-8 inline-flex items-center bg-paper border border-line rounded-full text-[12px] code-font text-gray-700">Together</span>
+        <span class="px-3 h-8 inline-flex items-center bg-paper border border-line rounded-full text-[12px] code-font text-gray-700">Ollama</span>
+        <span class="px-3 h-8 inline-flex items-center bg-paper border border-line rounded-full text-[12px] code-font text-gray-700">OpenRouter</span>
+        <span class="px-3 h-8 inline-flex items-center bg-paper border border-line rounded-full text-[12px] code-font text-gray-700">Custom (OpenAI-compatible)</span>
+      </div>
+
+      <div class="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-3 text-[12.5px]">
+        <div class="bg-paper border border-line rounded-md p-4 text-left">
+          <div class="code-font text-[10px] uppercase tracking-wider text-muted mb-1">Payments</div>
+          <div class="font-medium">Razorpay · Stripe · Cashfree · PhonePe · Payu</div>
+        </div>
+        <div class="bg-paper border border-line rounded-md p-4 text-left">
+          <div class="code-font text-[10px] uppercase tracking-wider text-muted mb-1">Channels</div>
+          <div class="font-medium">WhatsApp (Baileys 6) <span class="text-muted">· Telegram <span class="text-[10px] italic">(soon)</span></span></div>
+        </div>
+        <div class="bg-paper border border-line rounded-md p-4 text-left">
+          <div class="code-font text-[10px] uppercase tracking-wider text-muted mb-1">Lead Capture</div>
+          <div class="font-medium">Public forms · Meta Ads webhooks · Lead-capture APIs</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── STAFF AI CHAT SHOWCASE ────────────────────────────── -->
+  <section class="py-16 sm:py-24 border-b border-line">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6">
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+
+        <div>
+          <p class="text-[11px] code-font text-muted uppercase tracking-wider mb-3">STAFF AI — SELF CHAT</p>
+          <h2 class="text-2xl sm:text-3xl font-semibold tracking-tight leading-tight">
+            Message your own number.<br/>
+            <span class="text-muted">Run the entire CRM.</span>
+          </h2>
+          <p class="mt-4 text-sm text-gray-600 leading-relaxed">
+            Send a WhatsApp message to yourself. The AI detects it came from staff, unlocks staff tools, and
+            executes across the CRM — query open deals, update stages, create tasks, add notes, summarize a contact.
+          </p>
+          <ul class="mt-5 space-y-2 text-[13px] text-gray-700">
+            <li class="flex gap-2"><span class="text-emerald-600 font-semibold">✓</span> Natural-language CRM access — no dashboard needed on the go</li>
+            <li class="flex gap-2"><span class="text-emerald-600 font-semibold">✓</span> 5-iteration tool chains with permission scoping</li>
+            <li class="flex gap-2"><span class="text-emerald-600 font-semibold">✓</span> Escalates to a human when confidence drops</li>
+          </ul>
+        </div>
+
+        <!-- Chat mockup -->
+        <div class="bg-white border border-line rounded-lg p-4 sm:p-5 shadow-sm">
+          <div class="flex items-center gap-2 pb-3 border-b border-line mb-3">
+            <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[11px] font-semibold">AI</div>
+            <div>
+              <div class="text-[13px] font-semibold leading-tight">AgenticCRM</div>
+              <div class="text-[10px] text-muted code-font">STAFF · ONLINE</div>
+            </div>
+          </div>
+
+          <div class="space-y-2.5 text-[13px]">
+            <div class="bubble-user px-3 py-2 max-w-[85%]">How many open deals do we have?</div>
+            <div class="bubble-ai px-3 py-2 max-w-[85%] ml-auto">You have <strong>14 open deals</strong> totaling ₹8.7L across 6 stages.</div>
+
+            <div class="bubble-user px-3 py-2 max-w-[85%]">Move the Acme deal to Negotiation and add a note — "waiting on legal review"</div>
+            <div class="bubble-ai px-3 py-2 max-w-[85%] ml-auto">Done. Moved <strong>Acme – Q2 Contract</strong> to Negotiation and logged the note.</div>
+
+            <div class="bubble-user px-3 py-2 max-w-[85%]">Remind me tomorrow at 10am to follow up</div>
+            <div class="bubble-ai px-3 py-2 max-w-[85%] ml-auto">Task created: <em>"Follow up on Acme deal"</em>, due tomorrow 10:00.</div>
+          </div>
+
+          <div class="mt-3 pt-3 border-t border-line flex items-center gap-2 text-[11px] text-muted code-font">
+            <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            TOOLS USED · search_contacts · update_deal_stage · add_note · create_task
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── TECH STACK ────────────────────────────────────────── -->
+  <section class="py-16 sm:py-20 bg-white border-b border-line">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-10">
+        <p class="text-[11px] code-font text-muted uppercase tracking-wider mb-3">BUILT ON PROVEN STACK</p>
+        <h2 class="text-2xl sm:text-3xl font-semibold tracking-tight">Modern. Boring. Reliable.</h2>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 text-[12.5px] code-font">
+        <div class="bg-paper border border-line rounded-md px-3 py-3 flex items-center justify-between">
+          <span class="text-muted">API</span><span class="font-medium">NestJS 11</span>
+        </div>
+        <div class="bg-paper border border-line rounded-md px-3 py-3 flex items-center justify-between">
+          <span class="text-muted">Dashboard</span><span class="font-medium">Next.js 16</span>
+        </div>
+        <div class="bg-paper border border-line rounded-md px-3 py-3 flex items-center justify-between">
+          <span class="text-muted">UI</span><span class="font-medium">React 19</span>
+        </div>
+        <div class="bg-paper border border-line rounded-md px-3 py-3 flex items-center justify-between">
+          <span class="text-muted">WhatsApp</span><span class="font-medium">Baileys 6</span>
+        </div>
+        <div class="bg-paper border border-line rounded-md px-3 py-3 flex items-center justify-between">
+          <span class="text-muted">Database</span><span class="font-medium">PostgreSQL 16</span>
+        </div>
+        <div class="bg-paper border border-line rounded-md px-3 py-3 flex items-center justify-between">
+          <span class="text-muted">Vector</span><span class="font-medium">pgvector</span>
+        </div>
+        <div class="bg-paper border border-line rounded-md px-3 py-3 flex items-center justify-between">
+          <span class="text-muted">ORM</span><span class="font-medium">Prisma 7</span>
+        </div>
+        <div class="bg-paper border border-line rounded-md px-3 py-3 flex items-center justify-between">
+          <span class="text-muted">Queue</span><span class="font-medium">BullMQ 5</span>
+        </div>
+        <div class="bg-paper border border-line rounded-md px-3 py-3 flex items-center justify-between">
+          <span class="text-muted">Cache</span><span class="font-medium">Redis 7</span>
+        </div>
+        <div class="bg-paper border border-line rounded-md px-3 py-3 flex items-center justify-between">
+          <span class="text-muted">Media</span><span class="font-medium">MinIO</span>
+        </div>
+        <div class="bg-paper border border-line rounded-md px-3 py-3 flex items-center justify-between">
+          <span class="text-muted">Pool</span><span class="font-medium">PgBouncer</span>
+        </div>
+        <div class="bg-paper border border-line rounded-md px-3 py-3 flex items-center justify-between">
+          <span class="text-muted">Metrics</span><span class="font-medium">Grafana</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECOND INSTALL CTA ────────────────────────────────── -->
+  <section class="py-20 sm:py-24 bg-ink text-white relative overflow-hidden">
+    <div class="absolute inset-0 grid-bg opacity-50"></div>
+    <div class="relative max-w-3xl mx-auto px-4 sm:px-6 text-center">
+      <h2 class="text-2xl sm:text-4xl font-semibold tracking-tight leading-tight">
+        Ready? One command installs everything.
+      </h2>
+      <p class="mt-4 text-sm text-white/60 max-w-lg mx-auto">
+        Self-host on any VPS with Docker. 4 GB RAM. 10 GB disk. One command.
+      </p>
+      <a href="#install"
+         class="mt-8 inline-flex items-center justify-center gap-2 px-6 h-11 rounded-md bg-white text-ink font-medium text-sm hover:bg-white/90 transition">
+        Install now
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ────────────────────────────────────────────── -->
+  <footer class="bg-ink text-gray-400 border-t border-white/10">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-14">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-[12.5px]">
+
+        <div>
+          <h4 class="text-white font-semibold text-[11px] code-font uppercase tracking-wider mb-3">Product</h4>
+          <ul class="space-y-2">
+            <li><a href="#install" class="hover:text-white transition">Install</a></li>
+            <li><a href="#features" class="hover:text-white transition">Features</a></li>
+            <li><a href="#providers" class="hover:text-white transition">AI Providers</a></li>
+            <li><a href="https://github.com/Sapheron/AgenticCRM/releases" target="_blank" rel="noopener" class="hover:text-white transition">Changelog</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-white font-semibold text-[11px] code-font uppercase tracking-wider mb-3">Resources</h4>
+          <ul class="space-y-2">
+            <li><a href="https://github.com/Sapheron/AgenticCRM" target="_blank" rel="noopener" class="hover:text-white transition">GitHub</a></li>
+            <li><a href="https://github.com/Sapheron/AgenticCRM/issues" target="_blank" rel="noopener" class="hover:text-white transition">Report an issue</a></li>
+            <li><a href="https://github.com/Sapheron/AgenticCRM#readme" target="_blank" rel="noopener" class="hover:text-white transition">Documentation</a></li>
+            <li><a href="/install.sh" class="hover:text-white transition">Install script</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-white font-semibold text-[11px] code-font uppercase tracking-wider mb-3">Made by</h4>
+          <ul class="space-y-2">
+            <li>
+              <a href="https://sapheron.com" target="_blank" rel="noopener" class="text-white hover:text-white/80 font-semibold transition">Sapheron</a>
+              <div class="text-gray-500 text-[11px] mt-0.5">Product brand</div>
+            </li>
+            <li class="pt-2">
+              <a href="https://technotalim.com" target="_blank" rel="noopener" class="hover:text-white transition">TechnoTaLim</a>
+              <div class="text-gray-500 text-[11px] mt-0.5">Parent company · Platform and Services LLP</div>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-white font-semibold text-[11px] code-font uppercase tracking-wider mb-3">Legal</h4>
+          <ul class="space-y-2">
+            <li><a href="https://github.com/Sapheron/AgenticCRM/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-white transition">MIT License</a></li>
+            <li><span class="text-gray-500">Self-hosted, your data</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mt-12 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <img src="/assets/full_logo_w.png" alt="AgenticCRM" class="h-5 w-auto opacity-90" />
+          <span class="text-[11px] code-font text-gray-500">© 2026 TECHNOTALIM PLATFORM AND SERVICES LLP · SAPHERON · BUILT WITH CARE IN INDIA</span>
+        </div>
+        <p class="text-[11px] code-font text-gray-600">
+          INDEPENDENT PROJECT · NOT AFFILIATED WITH META/WHATSAPP
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ─── SCRIPTS ───────────────────────────────────────────── -->
+  <script>
+    const INSTALL_CMD = 'curl -fsSL https://agenticcrm.sapheron.com/install.sh | sudo bash';
+
+    async function copyCmd() {
+      const label = document.getElementById('copy-cmd-label');
+      try {
+        await navigator.clipboard.writeText(INSTALL_CMD);
+        label.textContent = 'COPIED!';
+        setTimeout(() => { label.textContent = 'COPY'; }, 1800);
+      } catch (e) {
+        const textarea = document.createElement('textarea');
+        textarea.value = INSTALL_CMD;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try { document.execCommand('copy'); label.textContent = 'COPIED!'; }
+        catch { label.textContent = 'ERROR'; }
+        finally { document.body.removeChild(textarea); setTimeout(() => { label.textContent = 'COPY'; }, 1800); }
+      }
+    }
+  </script>
+</body>
+</html>
