@@ -19,7 +19,7 @@ export function validateRuntimeConfig(env: NodeJS.ProcessEnv = process.env): voi
   }
 
   const domain = env.DOMAIN ?? '';
-  if (!domain || domain.includes('yourcompany.com') || domain.includes('CHANGE_ME') || /[\\s/:]/.test(domain)) {
+  if (!domain || domain.includes('yourcompany.com') || domain.includes('CHANGE_ME') || /[\s/:]/.test(domain)) {
     problems.push('DOMAIN must be the public hostname without a scheme or path');
   }
 
