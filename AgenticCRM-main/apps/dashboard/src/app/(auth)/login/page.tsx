@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import api from '@/lib/api-client';
 import { useAuthStore } from '@/stores/auth.store';
 import Image from 'next/image';
+import Link from 'next/link';
 
 const schema = z.object({
   email: z.string().email(),
@@ -88,6 +89,15 @@ export default function LoginPage() {
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
+        </div>
+
+        <div className="text-center mt-4">
+          <p className="text-xs text-gray-500">
+            New to BizPilot?{' '}
+            <Link href="/register" className="font-semibold text-gray-200 hover:underline">
+              Create your workspace
+            </Link>
+          </p>
         </div>
 
         <div className="text-center mt-6 space-y-1">
