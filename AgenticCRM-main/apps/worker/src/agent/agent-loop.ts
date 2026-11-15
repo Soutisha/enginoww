@@ -25,29 +25,13 @@ import Redis from 'ioredis';
  * Unknown models default to 16384.
  */
 const MODEL_MAX_TOKENS: Record<string, number> = {
-  // OpenAI
-  'gpt-4.1': 32768, 'gpt-4.1-mini': 32768, 'gpt-4.1-nano': 32768,
-  'gpt-4o': 16384, 'gpt-4o-mini': 16384,
-  'o3': 100000, 'o3-mini': 100000, 'o4-mini': 100000,
-  // Anthropic
-  'claude-opus-4-6': 128000, 'claude-sonnet-4-6': 64000, 'claude-sonnet-4-5': 64000,
-  'claude-haiku-4-5-20251001': 64000,
-  // Gemini
-  'gemini-2.5-pro': 65536, 'gemini-2.5-flash': 65536, 'gemini-2.5-flash-lite': 65536,
-  'gemini-2.0-flash': 8192, 'gemini-2.0-flash-lite': 8192,
-  // DeepSeek
-  'deepseek-chat': 8192, 'deepseek-reasoner': 65536,
-  // Groq
-  'llama-3.3-70b-versatile': 32768, 'qwen-qwq-32b': 32768,
-  // xAI (no separate output cap — use full context)
-  'grok-4': 131072, 'grok-3': 131072, 'grok-3-mini': 131072,
-  // Mistral
-  'mistral-large-latest': 32768, 'codestral-latest': 32768,
-  // Moonshot
-  'kimi-k2.5': 65535, 'kimi-k2-thinking': 65535,
-  // Qwen
-  'qwen-max': 8192, 'qwen-plus': 8192,
+  'gpt-5.4-mini': 8192,
+  'gpt-5.4': 16384,
+  'gpt-5.5': 16384,
 };
+const OPENAI_MODELS = new Set(Object.keys(MODEL_MAX_TOKENS));
+const DEFAULT_OPENAI_MODEL = 'gpt-5.4-mini';
+
 
 const logger = pino({ level: process.env.LOG_LEVEL ?? 'info' });
 const redis = new Redis(process.env.REDIS_URL!);
@@ -57,7 +41,6 @@ const AI_RETRY_ATTEMPTS = 2;
 const AI_RETRY_DELAY_MS = 3000;
 const RETRYABLE_STATUS = /503|429|529|overloaded|rate.?limit|too many|high demand|temporarily/i;
 
-const AI_CONFIG_TTL = 600; // 10 min cache
 const MAX_TOOL_ITERATIONS = 5;
 
 interface AgentJobData {
@@ -79,29 +62,30 @@ export async function runAgentLoop(data: AgentJobData): Promise<void> {
     return;
   }
 
-  // 2. Load AI config with Redis cache
-  const cacheKey = `ai-config:${companyId}`;
-  let aiConfig: Awaited<ReturnType<typeof prisma.aiConfig.findUnique>>;
-
-  const cached = await redis.get(cacheKey).catch(() => null);
-  if (cached) {
-    aiConfig = JSON.parse(cached) as typeof aiConfig;
-  } else {
-    aiConfig = await prisma.aiConfig.findUnique({ where: { companyId } });
-    if (aiConfig) {
-      await redis.setex(cacheKey, AI_CONFIG_TTL, JSON.stringify(aiConfig)).catch(() => null);
-    }
-  }
+  // 2. Read the current workspace AI configuration directly from PostgreSQL.
+  // Avoid a stale Redis copy after an administrator changes provider or API key.
+  const aiConfig = await prisma.aiConfig.findUnique({ where: { companyId } });
 
   if (!aiConfig?.autoReplyEnabled) {
     logger.info(logCtx, 'AI auto-reply disabled for this company');
     return;
   }
 
-  if (!aiConfig.apiKeyEncrypted) {
-    logger.warn(logCtx, 'No AI API key configured');
+  if (aiConfig.provider !== 'OPENAI' && !process.env.OPENAI_API_KEY) {
+    logger.warn(logCtx, 'Workspace AI provider is not OpenAI; waiting for OpenAI setup');
     return;
   }
+
+  // Never reuse a legacy Gemini/third-party key for OpenAI.
+  const apiKey = aiConfig.provider === 'OPENAI' && aiConfig.apiKeyEncrypted
+    ? decrypt(aiConfig.apiKeyEncrypted)
+    : process.env.OPENAI_API_KEY ?? '';
+  if (!apiKey) {
+    logger.warn(logCtx, 'OpenAI API key is not configured for this workspace');
+    return;
+  }
+
+  const openAiModel = OPENAI_MODELS.has(aiConfig.model) ? aiConfig.model : DEFAULT_OPENAI_MODEL;
 
   // Check contact hasn't opted out
   const contact = await prisma.contact.findUnique({
@@ -128,33 +112,29 @@ export async function runAgentLoop(data: AgentJobData): Promise<void> {
     });
   }
 
-  // 4. Build provider + fallback chain
-  const apiKey = decrypt(aiConfig.apiKeyEncrypted);
+  // 4. Build the first-party OpenAI provider + OpenAI-only fallback chain.
   const provider = ProviderFactory.create({
-    provider: aiConfig.provider,
-    model: aiConfig.model,
+    provider: 'OPENAI',
+    model: openAiModel,
     apiKey,
-    baseUrl: aiConfig.baseUrl ?? undefined,
   });
 
-  // Load fallback providers from the configured chain
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const fallbackModels = ((aiConfig as any).fallbackModels ?? []) as Array<{
-    provider: string; model: string; apiKeyEncrypted: string; baseUrl?: string;
-  }>;
+  const fallbackModels = Array.isArray(aiConfig.fallbackModels)
+    ? (aiConfig.fallbackModels as Array<{ provider?: string; model?: string; apiKeyEncrypted?: string }>)
+        .filter((fb) => fb.provider === 'OPENAI' && typeof fb.model === 'string' && OPENAI_MODELS.has(fb.model))
+    : [];
   const fallbackProviders = fallbackModels
-    .filter((fb) => fb.apiKeyEncrypted)
     .map((fb) => {
       try {
+        const fallbackKey = fb.apiKeyEncrypted ? decrypt(fb.apiKeyEncrypted) : apiKey;
         return ProviderFactory.create({
-          provider: fb.provider,
-          model: fb.model,
-          apiKey: decrypt(fb.apiKeyEncrypted),
-          baseUrl: fb.baseUrl ?? undefined,
+          provider: 'OPENAI',
+          model: fb.model!,
+          apiKey: fallbackKey,
         });
       } catch { return null; }
     })
-    .filter(Boolean);
+    .filter((item): item is NonNullable<typeof item> => item !== null);
 
   // 5. Build context
   const messages = await buildContext(
@@ -208,7 +188,7 @@ export async function runAgentLoop(data: AgentJobData): Promise<void> {
       const currentProvider = allProviders[pIdx]!;
       const isFallback = pIdx > 0;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const currentModel = isFallback ? (fallbackModels[pIdx - 1]?.model ?? 'fallback') : aiConfig.model;
+      const currentModel = isFallback ? (fallbackModels[pIdx - 1]?.model ?? DEFAULT_OPENAI_MODEL) : openAiModel;
 
       for (let attempt = 0; attempt <= AI_RETRY_ATTEMPTS; attempt++) {
         try {
@@ -310,8 +290,8 @@ export async function runAgentLoop(data: AgentJobData): Promise<void> {
           status: 'PENDING',
           body: replyText,
           isAiGenerated: true,
-          aiProvider: aiConfig.provider,
-          aiModel: aiConfig.model,
+          aiProvider: 'OPENAI',
+          aiModel: openAiModel,
           aiTokensUsed: totalTokens,
           aiLatencyMs: response.latencyMs,
         },
