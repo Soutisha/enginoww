@@ -1,7 +1,7 @@
 'use client';
 
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, FlaskConical, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import {
   ActivityCard, AgentsCard, ConversationsCard, FollowUpsCard, FunnelCard, KpiTiles, RevenueHero,
@@ -23,8 +23,28 @@ export default function DashboardPage() {
     refetchInterval: 60_000,
   });
 
+  const { data: demoStatus } = useQuery({
+    queryKey: ['company-demo-data'],
+    queryFn: () => api.get('/company/demo-data').then((r) => r.data.data as {
+      loaded: boolean;
+      counts: { contacts: number; leads: number; deals: number; tasks: number; products: number; payments: number; conversations: number };
+    }),
+    staleTime: 60_000,
+  });
+
   return (
     <div className="space-y-4">
+      {demoStatus?.loaded && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3" role="status">
+          <span className="mt-0.5 rounded-md bg-white p-1.5 text-amber-700"><FlaskConical size={15} /></span>
+          <div>
+            <p className="text-xs font-semibold text-amber-950">Demo data is enabled</p>
+            <p className="mt-0.5 text-[11px] leading-relaxed text-amber-900">
+              This dashboard includes fictional sample records and simulated payments for demonstration. Simulated payments are not actual revenue. Manage sample records in Settings → Company.
+            </p>
+          </div>
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-ink-dim">
           {dataUpdatedAt ? `Updated ${new Date(dataUpdatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Loading your numbers…'}
