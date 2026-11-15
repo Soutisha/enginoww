@@ -25,7 +25,7 @@ const checks = [
   ['Company-scoped protected API', controller.includes('CompanyScopeGuard') && controller.includes("RequirePermissions('products')")],
   ['Six requested marketing generators', ['product_description','whatsapp_reply','promotional_copy','campaign','social_post','banner'].every(x => service.includes(x))],
   ['Configured AI provider and encrypted key reused', service.includes('prisma.aiConfig.findUnique') && service.includes('decrypt(config.apiKeyEncrypted)')],
-  ['Anthropic and OpenAI-compatible provider paths', service.includes('api.anthropic.com/v1/messages') && service.includes('/chat/completions')],
+  ['OpenAI-only marketing generation path', service.includes('https://api.openai.com/v1/chat/completions') && service.includes("provider: 'OPENAI'") && !service.includes('api.anthropic.com')],
   ['Product facts are scoped to the company', service.includes('where: { id: input.productId, companyId }')],
   ['Brand voice and avoid-term checks', service.includes('checkBrandConsistency') && service.includes('avoidTerms')],
   ['Generated content saved as drafts', service.includes('prisma.marketingAsset.create') && "status: 'DRAFT'" ],
