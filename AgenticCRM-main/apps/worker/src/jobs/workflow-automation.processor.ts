@@ -211,7 +211,7 @@ async function executeWorkflow(queue: Queue, data: JsonObject) {
       const type = String(step.type ?? 'action');
       const config = asObject(step.config);
       const existingIndex = history.findIndex((item) => item.stepIndex === index);
-      let record: JsonObject = existingIndex >= 0 ? history[existingIndex] : {
+      const record: JsonObject = existingIndex >= 0 ? history[existingIndex] : {
         stepIndex: index, name: String(step.name ?? `${type} ${index + 1}`), type,
         status: 'RUNNING', startedAt: new Date().toISOString(),
       };
