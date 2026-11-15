@@ -28,7 +28,6 @@ import type {
   ListCampaignsFilters,
 } from '../campaigns/campaigns.types';
 import { FormsService } from '../forms/forms.service';
-import { LeadsService as FormsLeadsShim } from '../leads/leads.service';
 import type {
   FormActor,
   FormField,
@@ -79,6 +78,7 @@ import type {
 } from '../knowledge-base/knowledge-base.types';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { WorkflowsService } from '../workflows/workflows.service';
+import { WorkflowEventsService } from '../workflows/workflow-events.service';
 import { DocumentsService } from '../documents/documents.service';
 import { IntegrationsService } from '../integrations/integrations.service';
 import { ReportsService } from '../reports/reports.service';
@@ -89,8 +89,13 @@ import type { ChatAttachment } from './attachments';
 // Memory service is a plain class (no DI deps), so we can instantiate it once
 // here and reuse across tool calls. Tools that don't go through Nest's DI
 // container (like the chat tools) need this.
+const workflowEventsQueue = new Queue(QUEUES.WORKFLOW_EVENTS, {
+  connection: new Redis((process.env.REDIS_URL || '').trim(), { maxRetriesPerRequest: null }),
+});
+const workflowEventsService = new WorkflowEventsService(workflowEventsQueue);
+
 const memoryService = new MemoryService();
-const leadsService = new LeadsService();
+const leadsService = new LeadsService(workflowEventsService);
 const dealsService = new DealsService();
 const tasksService = new TasksService();
 const productsService = new ProductsService();
@@ -98,16 +103,14 @@ const templatesService = new TemplatesService();
 const sequencesService = new SequencesService();
 const sequenceMemoryService = new SequenceMemoryService();
 const campaignsService = new CampaignsService();
-// FormsService takes a LeadsService (Nest DI usually handles this), so we
-// instantiate a local LeadsService without DI hookup — all LeadsService
-// methods used by FormsService.submit are plain prisma reads/writes.
-const formsService = new FormsService(new FormsLeadsShim());
+// Reuse the company-scoped LeadsService and its workflow event publisher.
+const formsService = new FormsService(leadsService);
 const quotesService = new QuotesService();
 const invoicesService = new InvoicesService();
 // PaymentsService needs an InvoicesService for auto-reconciliation.
 // Reuse the same singleton so the activity log is consistent.
-const paymentsService = new PaymentsService(invoicesService);
-const ticketsService = new TicketsService();
+const paymentsService = new PaymentsService(invoicesService, workflowEventsService);
+const ticketsService = new TicketsService(workflowEventsService);
 const kbService = new KnowledgeBaseService();
 const analyticsService = new AnalyticsService();
 const workflowsService = new WorkflowsService();
@@ -7264,7 +7267,9 @@ const tools: AdminTool[] = [
     },
     execute: async (args, companyId) => {
       const exec = await workflowsService.run(companyId, args.workflowId as string, AI_ACTOR);
-      return `Manual run started — execution id: ${exec.id}`;
+      return exec?.id
+        ? `Manual run started — execution id: ${exec.id}`
+        : 'Manual run completed; no execution identifier was returned.';
     },
   },
   {
