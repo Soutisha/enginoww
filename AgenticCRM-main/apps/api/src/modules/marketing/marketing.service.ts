@@ -214,7 +214,7 @@ export class MarketingService {
     if (config?.provider && config.provider !== 'OPENAI') {
       throw new ServiceUnavailableException('Only OpenAI is enabled for marketing generation.');
     }
-    const model = OPENAI_MODELS.includes(config?.model) ? config.model : 'gpt-5.4-mini';
+    const model = (OPENAI_MODELS as readonly string[]).includes(String(config?.model)) ? config.model : 'gpt-5.4-mini';
     const apiKey = config?.apiKeyEncrypted ? decrypt(config.apiKeyEncrypted) : process.env.OPENAI_API_KEY;
     if (!apiKey) throw new ServiceUnavailableException('OpenAI API key is not configured.');
 
