@@ -201,19 +201,6 @@ export default function AiSettingsPage() {
                 </p>
               </div>
 
-              {needsBaseUrl && (
-                <div>
-                  <label className="text-[11px] font-medium text-gray-600 mb-1 block">
-                    Base URL {provider === 'OLLAMA' && <span className="text-gray-400">(default: http://localhost:11434/v1)</span>}
-                  </label>
-                  <input
-                    value={baseUrl}
-                    onChange={(e) => setBaseUrl(e.target.value)}
-                    placeholder="http://localhost:11434/v1"
-                    className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400"
-                  />
-                </div>
-              )}
             </div>
           </div>
 
