@@ -996,8 +996,8 @@ model TaskRecurrence {
 model AiConfig {
   id                 String     @id @default(cuid())
   companyId          String     @unique
-  provider           AiProvider @default(GEMINI)
-  model              String     @default("gemini-2.0-flash")
+  provider           AiProvider @default(OPENAI)
+  model              String     @default("gpt-5.4-mini")
   apiKeyEncrypted    String?
   baseUrl            String?
   systemPrompt       String     @default("You are a helpful sales assistant. Help the customer and capture their information.")
