@@ -1,6 +1,5 @@
 /**
- * OpenAI provider — also used for Groq, Ollama, and OpenRouter
- * since all are OpenAI-compatible APIs.
+ * First-party OpenAI Chat Completions provider for WhatsApp AI and background jobs.
  */
 import OpenAI from 'openai';
 import type { AiProvider, ChatMessage, ToolDefinition, ChatResponse } from './provider.interface';
@@ -12,7 +11,7 @@ export class OpenAiProvider implements AiProvider {
 
   constructor(
     apiKey: string,
-    model = 'gpt-4.1-mini',
+    model = 'gpt-5.4-mini',
     providerName = 'OPENAI',
     baseUrl?: string,
   ) {
@@ -50,7 +49,8 @@ export class OpenAiProvider implements AiProvider {
         messages: openaiMessages,
         tools: openaiTools.length > 0 ? openaiTools : undefined,
         tool_choice: openaiTools.length > 0 ? 'auto' : undefined,
-        max_tokens: opts.maxTokens ?? 1024,
+        max_completion_tokens: opts.maxTokens ?? 4096,
+        reasoning_effort: 'none',
         temperature: opts.temperature ?? 0.7,
       },
       { timeout: opts.timeoutMs ?? 30000 },
