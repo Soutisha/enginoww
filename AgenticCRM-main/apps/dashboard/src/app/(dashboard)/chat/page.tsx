@@ -455,7 +455,7 @@ export default function AiChatPage() {
               placeholder={activeConvId ? (config?.apiKeySet ? 'Ask AI anything... (paste or attach files)' : 'Configure AI in Settings first') : 'Create a new chat to start'}
               disabled={!activeConvId || !config?.apiKeySet}
               rows={1}
-              className="flex-1 border border-gray-200 rounded-lg px-2.5 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-gray-400 max-h-24 disabled:bg-gray-50 disabled:text-gray-300 placeholder:text-gray-300"
+              className="flex-1 border border-gray-700 bg-gray-900 text-white rounded-lg px-2.5 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-signal max-h-24 disabled:bg-gray-100 disabled:text-gray-500 placeholder:text-gray-300"
             />
             <button
               onClick={handleSend}
