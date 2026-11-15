@@ -54,8 +54,21 @@ export default function RegisterPage() {
       toast.success('Your workspace is ready');
       router.push('/chat');
     } catch (error: unknown) {
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
-        ?? 'Could not create your workspace';
+      const failure = error as {
+        code?: string;
+        response?: {
+          status?: number;
+          data?: { message?: string | string[] };
+        };
+      };
+      const responseMessage = failure.response?.data?.message;
+      const message = Array.isArray(responseMessage)
+        ? responseMessage.join(', ')
+        : typeof responseMessage === 'string' && responseMessage.trim()
+          ? responseMessage
+          : failure.response?.status
+            ? `Workspace creation failed (HTTP ${failure.response.status}).`
+            : `Cannot reach the BizPilot API (${failure.code ?? 'network error'}). Please retry.`;
       toast.error(message);
     } finally {
       setLoading(false);
