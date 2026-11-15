@@ -32,7 +32,7 @@ export class ProductVisionService {
     if (config && config.provider !== 'OPENAI') {
       throw new ServiceUnavailableException('Connect OpenAI in Settings → AI before using Product Intelligence.');
     }
-    const model = config?.model && OPENAI_MODELS.includes(config.model)
+    const model = config?.model && (OPENAI_MODELS as readonly string[]).includes(config.model)
       ? config.model
       : 'gpt-5.4-mini';
     const apiKey = config?.apiKeyEncrypted
