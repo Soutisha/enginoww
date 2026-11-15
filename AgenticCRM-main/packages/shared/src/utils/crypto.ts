@@ -3,8 +3,21 @@ import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 function getKey(): Buffer {
   const key = process.env.ENCRYPTION_KEY;
   if (!key) throw new Error('ENCRYPTION_KEY env var is not set');
-  if (key.length !== 64) throw new Error('ENCRYPTION_KEY must be 32 bytes (64 hex chars)');
-  return Buffer.from(key, 'hex');
+
+  // Keep compatibility with existing deployments that use 64-character hex
+  // keys, while also accepting Render's base64-encoded 32-byte generated keys.
+  if (/^[a-fA-F0-9]{64}$/.test(key)) {
+    return Buffer.from(key, 'hex');
+  }
+
+  if (/^[A-Za-z0-9+/]{43}=$/.test(key)) {
+    const decoded = Buffer.from(key, 'base64');
+    if (decoded.length === 32 && decoded.toString('base64') === key) {
+      return decoded;
+    }
+  }
+
+  throw new Error('ENCRYPTION_KEY must be a 32-byte key encoded as 64 hex or 44 base64 characters');
 }
 
 /**
