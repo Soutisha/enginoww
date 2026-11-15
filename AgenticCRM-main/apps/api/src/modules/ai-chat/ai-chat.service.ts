@@ -9,7 +9,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { prisma } from '@wacrm/database';
 import { decrypt } from '@wacrm/shared';
-import { PROVIDER_BASE_URLS, AiSettingsService } from '../settings/ai-settings.service';
+import { DEFAULT_OPENAI_MODEL, OPENAI_MODELS, AiSettingsService } from '../settings/ai-settings.service';
 import { getAdminToolDefinitions, executeAdminTool } from './admin-tools';
 import { AiMemoryService } from '../ai-memory/ai-memory.service';
 import { MemoryService } from '../memory/memory.service';
@@ -19,7 +19,6 @@ import {
   modelSupportsImages,
   inlineMessageText,
   buildOpenAIContent,
-  buildAnthropicContent,
 } from './attachments';
 
 const MAX_TOOL_ITERATIONS = 8;
@@ -34,92 +33,11 @@ const MAX_TOOL_ITERATIONS = 8;
  * Unknown models default to 16384 — high enough for CRM ops, safe for any provider.
  */
 const MODEL_MAX_TOKENS: Record<string, number> = {
-  // ── OpenAI ──────────────────────────────────────────────────────────────────
-  'gpt-4.1':       32768,  // docs: 32,768 output
-  'gpt-4.1-mini':  32768,  // docs: 32,768 output
-  'gpt-4.1-nano':  32768,  // docs: 32,768 output
-  'gpt-4o':        16384,  // docs: 16,384 output
-  'gpt-4o-mini':   16384,  // docs: 16,384 output
-  'o3':           100000,  // docs: 100,000 output
-  'o3-mini':      100000,  // docs: 100,000 output
-  'o4-mini':      100000,  // docs: 100,000 output
-  'gpt-5.4':       32768,  // same family as 4.1
-  'gpt-5.4-mini':  32768,
-  'gpt-5.4-nano':  32768,
-  'gpt-5.4-pro':   32768,
-
-  // ── Anthropic ───────────────────────────────────────────────────────────────
-  'claude-opus-4-6':           128000,  // docs: 128K output (up to 300K batch)
-  'claude-sonnet-4-6':          64000,  // docs: 64K output
-  'claude-sonnet-4-5':          64000,  // docs: 64K output
-  'claude-sonnet-4-5-20241022':  8192,  // legacy: 8K output
-  'claude-haiku-4-5-20251001':  64000,  // docs: 64K output
-
-  // ── Google Gemini ───────────────────────────────────────────────────────────
-  'gemini-2.5-pro':             65536,  // docs: 65,536 output
-  'gemini-2.5-flash':           65536,  // docs: 65,536 output
-  'gemini-2.5-flash-lite':      65536,  // docs: 65,536 output
-  'gemini-2.0-flash':            8192,  // docs: 8,192 output
-  'gemini-2.0-flash-lite':       8192,  // docs: 8,192 output
-  'gemini-3.1-pro-preview':     65536,
-  'gemini-3.1-flash-preview':   65536,
-  'gemini-3.1-flash-lite-preview': 65536,
-  'gemini-3-pro-preview':       65536,
-  'gemini-3-flash-preview':     65536,
-
-  // ── DeepSeek ────────────────────────────────────────────────────────────────
-  'deepseek-chat':       8192,  // docs: 8,192 output (default 4,096)
-  'deepseek-reasoner':  65536,  // docs: 65,536 output (default 32,768)
-
-  // ── Groq ────────────────────────────────────────────────────────────────────
-  'llama-3.3-70b-versatile':        32768,  // docs: 32,768 output
-  'deepseek-r1-distill-llama-70b':  16384,
-  'qwen-qwq-32b':                   32768,
-  'llama-3.1-8b-instant':           8192,
-  'gemma2-9b-it':                   8192,
-
-  // ── xAI ─────────────────────────────────────────────────────────────────────
-  // xAI shares context between input+output; no separate output cap published.
-  // Using 131072 (full context) — API will clamp based on input size.
-  'grok-4':       131072,  // context: 128K, reasoning model
-  'grok-4-fast':  131072,
-  'grok-4-1-fast': 131072,
-  'grok-3':       131072,  // context: 131,072
-  'grok-3-mini':  131072,
-  'grok-3-fast':  131072,
-
-  // ── Mistral ─────────────────────────────────────────────────────────────────
-  // Mistral doesn't publish separate output caps; defaults to context minus input.
-  // Using conservative 32768 — safe for all Mistral models.
-  'mistral-large-latest':  32768,
-  'mistral-medium-latest': 32768,
-  'mistral-small-latest':  32768,
-  'codestral-latest':      32768,
-
-  // ── Together AI ─────────────────────────────────────────────────────────────
-  'meta-llama/Llama-3.3-70B-Instruct-Turbo':            32768,
-  'meta-llama/Llama-4-Scout-17B-16E-Instruct':          16384,
-  'meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8':  16384,
-  'deepseek-ai/DeepSeek-V3.1':                          8192,
-  'deepseek-ai/DeepSeek-R1':                            65536,
-  'moonshotai/Kimi-K2.5':                               65536,
-
-  // ── Moonshot/Kimi ───────────────────────────────────────────────────────────
-  'kimi-k2.5':             65535,  // docs: 65,535 output (context: 262K)
-  'kimi-k2-thinking':      65535,  // context: 256K
-  'kimi-k2-thinking-turbo': 65535,
-  'kimi-k2-turbo':         65535,
-
-  // ── Qwen (Alibaba) ─────────────────────────────────────────────────────────
-  'qwen-max':   8192,  // docs: 8,192 output
-  'qwen-plus':  8192,  // docs: 8,192 output
-  'qwen3.5':    8192,
-
-  // ── StepFun ─────────────────────────────────────────────────────────────────
-  'step-2-16k':  16384,
-  'step-1-200k': 16384,
-  'step-1-32k':  16384,
+  'gpt-5.4-mini': 8192,
+  'gpt-5.4': 16384,
+  'gpt-5.5': 16384,
 };
+
 
 function getMaxTokensForModel(model: string): number {
   return MODEL_MAX_TOKENS[model] ?? 16384;
@@ -677,12 +595,30 @@ export class AiChatService {
     userRole: string = 'AGENT',
     disableTools = false,
   ) {
-    const config = await prisma.aiConfig.findUnique({ where: { companyId } });
-    if (!config || !config.apiKeyEncrypted) {
-      throw new BadRequestException('AI provider not configured. Go to Settings > AI to set up.');
+    const storedConfig = await prisma.aiConfig.findUnique({ where: { companyId } });
+    if (storedConfig && storedConfig.provider !== 'OPENAI') {
+      throw new BadRequestException(
+        'This workspace was using a retired AI provider. Open Settings → AI, add an OpenAI API key, and save the OpenAI configuration.',
+      );
     }
 
-    const apiKey = decrypt(config.apiKeyEncrypted);
+    const apiKey = storedConfig?.apiKeyEncrypted
+      ? decrypt(storedConfig.apiKeyEncrypted)
+      : process.env.OPENAI_API_KEY ?? '';
+    if (!apiKey) {
+      throw new BadRequestException(
+        'OpenAI is not connected yet. Open Settings → AI, add an OpenAI API key, save it, and test the connection.',
+      );
+    }
+
+    const model = storedConfig?.model && (OPENAI_MODELS as readonly string[]).includes(storedConfig.model)
+      ? storedConfig.model
+      : DEFAULT_OPENAI_MODEL;
+    const config = {
+      model,
+      temperature: storedConfig?.temperature ?? 0.7,
+      maxTokens: storedConfig?.maxTokens ?? 4096,
+    };
     const tools = disableTools ? [] : getAdminToolDefinitions(userPermissions, userRole);
     const actions: ToolAction[] = [];
     const start = Date.now();
@@ -736,11 +672,10 @@ export class AiChatService {
     // Build the provider chain: primary + fallbacks
     const fallbacks = await this.aiSettings.getResolvedFallbacks(companyId);
     const providerChain = [
-      { provider: config.provider as string, model: config.model, apiKey, baseUrl: config.baseUrl },
+      { provider: 'OPENAI' as const, model: config.model, apiKey, baseUrl: null },
       ...fallbacks,
     ];
-    // Track which provider actually responded
-    let activeProvider = config.provider as string;
+    let activeProvider = 'OPENAI';
     let activeModel = config.model;
 
     // Agent loop — iterate on tool calls
@@ -843,7 +778,7 @@ export class AiChatService {
       fallbackContent = `The AI model (${config.provider}/${config.model}) returned an empty response. This usually means:\n` +
         `1. The model doesn't support function/tool calling\n` +
         `2. The API key may be invalid or rate-limited\n` +
-        `3. Try a different model in Settings > AI (e.g., gpt-4.1-mini, gemini-2.5-flash, claude-sonnet-4-6)`;
+        `3. Try another supported OpenAI model in Settings → AI.`;
     }
 
     return {
@@ -858,32 +793,22 @@ export class AiChatService {
   // ── Provider calls with tool support ────────────────────────────────────
 
   private async callWithTools(
-    provider: string, model: string, apiKey: string, baseUrl: string | null | undefined,
+    provider: string, model: string, apiKey: string, _baseUrl: string | null | undefined,
     messages: ChatMessage[], tools: { name: string; description: string; parameters: Record<string, unknown> }[],
     maxTokens: number, temperature: number,
   ): Promise<{ content?: string; toolCalls?: ToolCall[] }> {
-    // Route all providers through the appropriate handler
-    // Gemini: use Google's OpenAI-compatible endpoint (avoids thought_signature issues)
-    switch (provider) {
-      case 'GEMINI':
-        return this.callOpenAIWithTools(
-          model, apiKey,
-          'https://generativelanguage.googleapis.com/v1beta/openai',
-          messages, tools, maxTokens, temperature,
-        );
-      case 'ANTHROPIC':
-        return this.callAnthropicWithTools(model, apiKey, messages, tools, maxTokens, temperature);
-      case 'OLLAMA':
-        return this.callOpenAIWithTools(model, apiKey, baseUrl ?? 'http://localhost:11434/v1', messages, tools, maxTokens, temperature);
-      case 'CUSTOM':
-        if (!baseUrl) throw new BadRequestException('baseUrl required for CUSTOM');
-        return this.callOpenAIWithTools(model, apiKey, baseUrl, messages, tools, maxTokens, temperature);
-      default: {
-        const url = provider === 'OPENAI' ? 'https://api.openai.com/v1' : (PROVIDER_BASE_URLS as Record<string, string | undefined>)[provider];
-        if (!url) throw new BadRequestException(`Unknown provider: ${provider}`);
-        return this.callOpenAIWithTools(model, apiKey, url, messages, tools, maxTokens, temperature);
-      }
+    if (provider !== 'OPENAI') {
+      throw new BadRequestException('Only OpenAI is enabled for BizPilot AI.');
     }
+    return this.callOpenAIWithTools(
+      model,
+      apiKey,
+      'https://api.openai.com/v1',
+      messages,
+      tools,
+      maxTokens,
+      temperature,
+    );
   }
 
   private async callOpenAIWithTools(
@@ -921,7 +846,8 @@ export class AiChatService {
       messages: openaiMessages,
       tools: openaiTools.length > 0 ? openaiTools : undefined,
       tool_choice: openaiTools.length > 0 ? 'auto' : undefined,
-      max_tokens: maxTokens,
+      max_completion_tokens: maxTokens,
+      reasoning_effort: 'none',
       temperature,
     });
 
@@ -960,163 +886,5 @@ export class AiChatService {
     };
   }
 
-  private async callAnthropicWithTools(
-    model: string, apiKey: string,
-    messages: ChatMessage[], tools: { name: string; description: string; parameters: Record<string, unknown> }[],
-    maxTokens: number, temperature: number,
-  ): Promise<{ content?: string; toolCalls?: ToolCall[] }> {
-    const system = messages.find((m) => m.role === 'system')?.content;
-    const supportsImages = modelSupportsImages(model);
 
-    // Convert messages to Anthropic format
-    const anthropicMessages: Array<Record<string, unknown>> = [];
-    for (const m of messages) {
-      if (m.role === 'system') continue;
-      if (m.role === 'tool') {
-        anthropicMessages.push({
-          role: 'user',
-          content: [{ type: 'tool_result', tool_use_id: m.tool_call_id, content: m.content }],
-        });
-      } else if (m.tool_calls?.length) {
-        anthropicMessages.push({
-          role: 'assistant',
-          content: m.tool_calls.map((tc) => ({
-            type: 'tool_use',
-            id: tc.id,
-            name: tc.function.name,
-            input: JSON.parse(tc.function.arguments),
-          })),
-        });
-      } else if (m.role === 'user' && m.attachments?.length) {
-        anthropicMessages.push({
-          role: 'user',
-          content: buildAnthropicContent(m.content, m.attachments, !supportsImages),
-        });
-      } else {
-        anthropicMessages.push({ role: m.role, content: m.content });
-      }
-    }
-
-    const anthropicTools = tools.map((t) => ({
-      name: t.name,
-      description: t.description,
-      input_schema: t.parameters,
-    }));
-
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: maxTokens,
-        temperature,
-        ...(system ? { system } : {}),
-        messages: anthropicMessages,
-        tools: anthropicTools.length > 0 ? anthropicTools : undefined,
-      }),
-    });
-
-    if (!res.ok) throw new BadRequestException(`Anthropic error: ${res.status} ${await res.text()}`);
-    const json = await res.json() as {
-      content?: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }>;
-    };
-
-    const textBlock = json.content?.find((b) => b.type === 'text');
-    const toolBlocks = json.content?.filter((b) => b.type === 'tool_use') ?? [];
-
-    if (toolBlocks.length > 0) {
-      return {
-        content: textBlock?.text,
-        toolCalls: toolBlocks.map((tb) => ({
-          id: tb.id!,
-          type: 'function' as const,
-          function: { name: tb.name!, arguments: JSON.stringify(tb.input) },
-        })),
-      };
-    }
-
-    return { content: textBlock?.text };
-  }
-
-  private async callGeminiWithTools(
-    model: string, apiKey: string,
-    messages: ChatMessage[], tools: { name: string; description: string; parameters: Record<string, unknown> }[],
-    maxTokens: number, temperature: number,
-  ): Promise<{ content?: string; toolCalls?: ToolCall[] }> {
-    const systemInstruction = messages.find((m) => m.role === 'system');
-    const contents: Array<Record<string, unknown>> = [];
-
-    for (const m of messages) {
-      if (m.role === 'system') continue;
-      if (m.role === 'tool') {
-        contents.push({
-          role: 'function',
-          parts: [{ functionResponse: { name: 'tool', response: { result: m.content } } }],
-        });
-      } else if (m.tool_calls?.length) {
-        contents.push({
-          role: 'model',
-          parts: m.tool_calls.map((tc) => ({
-            functionCall: { name: tc.function.name, args: JSON.parse(tc.function.arguments) },
-          })),
-        });
-      } else {
-        contents.push({
-          role: m.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: m.content }],
-        });
-      }
-    }
-
-    const geminiTools = tools.length > 0 ? [{
-      functionDeclarations: tools.map((t) => ({
-        name: t.name,
-        description: t.description,
-        parameters: t.parameters,
-      })),
-    }] : undefined;
-
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents,
-          ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction.content }] } } : {}),
-          ...(geminiTools ? { tools: geminiTools } : {}),
-          generationConfig: { maxOutputTokens: maxTokens, temperature },
-        }),
-      },
-    );
-
-    if (!res.ok) throw new BadRequestException(`Gemini error: ${res.status} ${await res.text()}`);
-    const json = await res.json() as {
-      candidates?: Array<{
-        content?: {
-          parts?: Array<{ text?: string; functionCall?: { name: string; args: Record<string, unknown> } }>;
-        };
-      }>;
-    };
-
-    const parts = json.candidates?.[0]?.content?.parts ?? [];
-    const functionCalls = parts.filter((p) => p.functionCall);
-    const textParts = parts.filter((p) => p.text);
-
-    if (functionCalls.length > 0) {
-      return {
-        toolCalls: functionCalls.map((fc, i) => ({
-          id: `gemini_${i}_${Date.now()}`,
-          type: 'function' as const,
-          function: { name: fc.functionCall!.name, arguments: JSON.stringify(fc.functionCall!.args) },
-        })),
-      };
-    }
-
-    return { content: textParts.map((p) => p.text).join('') };
-  }
 }
