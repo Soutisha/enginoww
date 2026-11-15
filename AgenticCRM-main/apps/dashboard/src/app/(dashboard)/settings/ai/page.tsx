@@ -38,7 +38,6 @@ export default function AiSettingsPage() {
   const [fbProvider, setFbProvider] = useState('OPENAI');
   const [fbModel, setFbModel] = useState('');
   const [fbApiKey, setFbApiKey] = useState('');
-  const [fbBaseUrl, setFbBaseUrl] = useState('');
 
   const { data: fallbacks = [] } = useQuery<FallbackEntry[]>({
     queryKey: ['ai-fallbacks'],
@@ -65,11 +64,10 @@ export default function AiSettingsPage() {
       provider: fbProvider,
       model: fbModel,
       ...(fbApiKey ? { apiKey: fbApiKey } : {}),
-      ...(fbBaseUrl ? { baseUrl: fbBaseUrl } : {}),
     }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['ai-fallbacks'] });
-      setFbApiKey(''); setFbBaseUrl('');
+      setFbApiKey('');
       toast.success('Fallback model added');
     },
     onError: () => toast.error('Failed to add fallback'),
@@ -357,14 +355,6 @@ export default function AiSettingsPage() {
                   placeholder="OpenAI API key (optional — uses primary key if blank)"
                   className="w-full border border-gray-200 rounded px-2 py-1.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder:text-gray-300"
                 />
-                {(fbProvider === 'OLLAMA' || fbProvider === 'CUSTOM') && (
-                  <input
-                    value={fbBaseUrl}
-                    onChange={(e) => setFbBaseUrl(e.target.value)}
-                    placeholder="Base URL (e.g. http://localhost:11434/v1)"
-                    className="w-full border border-gray-200 rounded px-2 py-1.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-gray-400"
-                  />
-                )}
                 <button
                   onClick={() => addFallbackMutation.mutate()}
                   disabled={addFallbackMutation.isPending || !fbModel}
