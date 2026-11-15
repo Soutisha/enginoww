@@ -1,12 +1,29 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api-client';
 import { toast } from 'sonner';
-import { Building2 } from 'lucide-react';
+import { Building2, Database, FlaskConical, Loader2, ShieldCheck, Trash2 } from 'lucide-react';
+
+type DemoCounts = {
+  contacts: number;
+  leads: number;
+  deals: number;
+  tasks: number;
+  products: number;
+  payments: number;
+  conversations: number;
+};
+
+type DemoDataStatus = {
+  loaded: boolean;
+  counts: DemoCounts;
+  note: string;
+};
 
 export default function CompanySettingsPage() {
+  const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -36,6 +53,55 @@ export default function CompanySettingsPage() {
     onSuccess: () => toast.success('Company settings saved'),
     onError: () => toast.error('Failed to save settings'),
   });
+
+  const { data: demoStatus, isLoading: demoStatusLoading } = useQuery<DemoDataStatus>({
+    queryKey: ['company-demo-data'],
+    queryFn: async () => {
+      const res = await api.get<{ data: DemoDataStatus }>('/company/demo-data');
+      return res.data.data;
+    },
+  });
+
+  const loadDemoMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.post<{ data: DemoDataStatus & { message: string } }>('/company/demo-data/load');
+      return res.data.data;
+    },
+    onSuccess: async (result) => {
+      toast.success(result.message);
+      await queryClient.invalidateQueries();
+    },
+    onError: (error: unknown) => {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+        ?? 'Could not load demo data. Please retry.';
+      toast.error(message);
+    },
+  });
+
+  const clearDemoMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.delete<{ data: DemoDataStatus & { message: string } }>('/company/demo-data', {
+        data: { confirmation: 'DELETE_DEMO_DATA' },
+      });
+      return res.data.data;
+    },
+    onSuccess: async (result) => {
+      toast.success(result.message);
+      await queryClient.invalidateQueries();
+    },
+    onError: (error: unknown) => {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+        ?? 'Could not remove demo data. Please retry.';
+      toast.error(message);
+    },
+  });
+
+  const requestDemoCleanup = () => {
+    const accepted = window.confirm(
+      'Remove only the fictional BizPilot demo records created by this tool? Your real contacts, leads, deals and other business records will be kept. Cleanup stops if real records are linked to demo records.',
+    );
+    if (accepted) clearDemoMutation.mutate();
+  };
 
   const timezones = (() => {
     try {
@@ -77,6 +143,66 @@ export default function CompanySettingsPage() {
           <p className="text-sm text-gray-500">Update your company profile</p>
         </div>
       </div>
+
+      <section className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-5 space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-lg bg-white border border-amber-100 flex items-center justify-center shrink-0">
+            <FlaskConical size={19} className="text-amber-700" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-amber-950">Demo workspace data</h2>
+            <p className="text-xs text-amber-900 mt-1">
+              Load fictional contacts, leads, deals, tasks, products, sample inbox conversations and simulated payments so the dashboard has data to demonstrate.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-amber-950">
+          <ShieldCheck size={14} />
+          <span>Workspace-scoped and tagged as demo. No WhatsApp messages are sent and no payment gateway is called.</span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {([
+            ['Contacts', demoStatus?.counts.contacts ?? 0],
+            ['Leads', demoStatus?.counts.leads ?? 0],
+            ['Deals', demoStatus?.counts.deals ?? 0],
+            ['Tasks', demoStatus?.counts.tasks ?? 0],
+            ['Products', demoStatus?.counts.products ?? 0],
+            ['Conversations', demoStatus?.counts.conversations ?? 0],
+            ['Simulated payments', demoStatus?.counts.payments ?? 0],
+          ] as const).map(([label, value]) => (
+            <div key={label} className="rounded-lg border border-amber-100 bg-white/80 px-3 py-2">
+              <p className="text-[10px] text-gray-500">{label}</p>
+              <p className="text-lg font-semibold text-gray-900 tabular-nums">{demoStatusLoading ? '—' : value}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => loadDemoMutation.mutate()}
+            disabled={loadDemoMutation.isPending || demoStatusLoading}
+            className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+          >
+            {loadDemoMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />}
+            {loadDemoMutation.isPending ? 'Loading sample data…' : demoStatus?.loaded ? 'Check / Load Demo Data' : 'Load Demo Data'}
+          </button>
+          {demoStatus?.loaded && (
+            <button
+              onClick={requestDemoCleanup}
+              disabled={clearDemoMutation.isPending || loadDemoMutation.isPending}
+              className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+            >
+              {clearDemoMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+              Remove Demo Data
+            </button>
+          )}
+        </div>
+        <p className="text-[10px] leading-relaxed text-amber-900">
+          Demo payments are simulated only and must not be reported as real revenue. All sample records have a dedicated demo marker. Cleanup removes only marked demo records and refuses to proceed if real business records depend on them.
+        </p>
+      </section>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
         <div>
