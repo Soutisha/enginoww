@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { prisma } from '@wacrm/database';
+import type { Prisma } from '@wacrm/database';
 import {
   classifyIntent,
   evaluateModel,
@@ -68,6 +69,7 @@ export class LeadIntelligenceService {
     const fitted = trainLogisticRegression(train);
     const metrics = evaluateModel(fitted, test);
     metrics.trainSamples = train.length;
+    const metricsForStorage = JSON.parse(JSON.stringify(metrics)) as Prisma.InputJsonValue;
 
     const saved = await prisma.leadScoringModel.upsert({
       where: { companyId },
@@ -77,7 +79,7 @@ export class LeadIntelligenceService {
         weights: fitted.weights,
         bias: fitted.bias,
         featureNames: [...LEAD_FEATURES],
-        metrics,
+        metrics: metricsForStorage,
         trainingSamples: examples.length,
         positiveSamples,
         negativeSamples,
@@ -87,7 +89,7 @@ export class LeadIntelligenceService {
         weights: fitted.weights,
         bias: fitted.bias,
         featureNames: [...LEAD_FEATURES],
-        metrics,
+        metrics: metricsForStorage,
         trainingSamples: examples.length,
         positiveSamples,
         negativeSamples,
