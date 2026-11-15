@@ -84,7 +84,7 @@ export function NotificationCenter() {
             {items.length === 0 ? (
               <div className="px-5 py-10 text-center">
                 <Bell size={22} className="mx-auto mb-2 text-ink-faint" />
-                <p className="text-sm font-medium text-ink">You're all caught up</p>
+                <p className="text-sm font-medium text-ink">You’re all caught up</p>
                 <p className="mt-1 text-xs text-ink-faint">New alerts will appear here.</p>
               </div>
             ) : (
