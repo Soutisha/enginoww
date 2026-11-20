@@ -373,6 +373,8 @@ export class CompanyService implements OnModuleInit {
       return { alreadyLoaded: false };
     }, { maxWait: 10_000, timeout: 30_000 });
 
+    await this.ensureDemoReports(companyId, userId);
+
     const status = await this.getDemoDataStatus(companyId);
     return {
       alreadyLoaded: result.alreadyLoaded,
@@ -381,6 +383,80 @@ export class CompanyService implements OnModuleInit {
         ? 'Demo data is already loaded. No duplicate records were created.'
         : 'Demo workspace data was created successfully.',
     };
+  }
+
+  private async ensureDemoReports(companyId: string, userId: string) {
+    // Create workspace-scoped report templates alongside demo CRM data.
+    // Re-running the loader is safe: existing marked reports are left untouched.
+    const reportSpecs = [
+      {
+        name: 'DEMO — Contact Directory',
+        entity: 'contacts',
+        description: 'Fictional sample contacts created by the BizPilot demo-data loader.',
+        columns: ['displayName', 'companyName', 'jobTitle', 'lifecycleStage', 'score'],
+      },
+      {
+        name: 'DEMO — Lead Pipeline',
+        entity: 'leads',
+        description: 'Fictional sample leads and pipeline statuses. Not real customer opportunities.',
+        columns: ['title', 'status', 'source', 'priority', 'estimatedValue', 'probability'],
+      },
+      {
+        name: 'DEMO — Deal Register',
+        entity: 'deals',
+        description: 'Fictional sample deals for demonstrating pipeline reporting.',
+        columns: ['title', 'stage', 'value', 'probability', 'weightedValue'],
+      },
+      {
+        name: 'DEMO — Task Worklist',
+        entity: 'tasks',
+        description: 'Fictional sample follow-up tasks. No real customer action has been taken.',
+        columns: ['title', 'status', 'priority', 'dueAt'],
+      },
+      {
+        name: 'DEMO — Simulated Payment Ledger',
+        entity: 'payments',
+        description: 'Fictional payment rows for report demonstrations. These are not real revenue.',
+        columns: ['amount', 'currency', 'status', 'description', 'paidAt'],
+      },
+    ] as const;
+
+    for (const spec of reportSpecs) {
+      const existing = await prisma.customReport.findFirst({
+        where: { companyId, name: spec.name, tags: { has: DEMO_MARKER } },
+        select: { id: true },
+      });
+      if (existing) continue;
+
+      const report = await prisma.customReport.create({
+        data: {
+          companyId,
+          name: spec.name,
+          entity: spec.entity,
+          type: 'TABLE',
+          status: 'ACTIVE',
+          description: spec.description,
+          tags: demoTags,
+          filters: { tags: { has: DEMO_MARKER } } as never,
+          columns: [...spec.columns],
+          isPublic: false,
+          notes: 'DEMO ONLY — fictional sample report. Results contain only records tagged bizpilot-demo-v1.',
+          createdByUserId: userId,
+        },
+      });
+
+      await prisma.reportActivity.create({
+        data: {
+          reportId: report.id,
+          companyId,
+          type: 'CREATED',
+          actorType: 'user',
+          actorId: userId,
+          title: `Demo report "${report.name}" created`,
+          meta: { demoMarker: DEMO_MARKER },
+        },
+      });
+    }
   }
 
   async clearDemoData(companyId: string, userId: string, role: string, confirmation: string) {
@@ -502,6 +578,17 @@ export class CompanyService implements OnModuleInit {
       }
       if (accountIds.length) {
         await tx.whatsAppAccount.deleteMany({ where: { companyId, id: { in: accountIds } } });
+      }
+
+      const demoReports = await tx.customReport.findMany({
+        where: { companyId, tags: { has: DEMO_MARKER } },
+        select: { id: true },
+      });
+      const demoReportIds = demoReports.map((report) => report.id);
+      if (demoReportIds.length) {
+        await tx.reportActivity.deleteMany({ where: { companyId, reportId: { in: demoReportIds } } });
+        await tx.scheduledReport.deleteMany({ where: { companyId, reportId: { in: demoReportIds } } });
+        await tx.customReport.deleteMany({ where: { companyId, id: { in: demoReportIds } } });
       }
 
       await tx.payment.deleteMany({ where: { companyId, tags: { has: DEMO_MARKER } } });
