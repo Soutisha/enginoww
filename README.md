@@ -206,9 +206,103 @@ The seed command creates the initial company and administrator using `COMPANY_NA
 
 ### 9.4 Start the application
 
-Start the API in one terminal after loading the variables from `.env` into that terminal's environment:
+Start the API in one terminal. In Bash, load the local variables and launch the NestJS development server:
 
 ```bash
+set -a
+source .env
+set +a
+pnpm --filter @wacrm/api exec nest start --watch
+```
+
+In Windows PowerShell, load the key/value pairs from `.env` before starting the API:
+
+```powershell
+Get-Content .env | ForEach-Object {
+  if ($_ -match '^\\s*([^#][^=]*)=(.*)
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:3000 pnpm --filter @wacrm/dashboard dev
+```
+
+On Windows PowerShell, set the dashboard variable first:
+
+```powershell
+$env:NEXT_PUBLIC_API_URL = "http://localhost:3000"
+pnpm --filter @wacrm/dashboard dev
+```
+
+Open **http://localhost:3001**.
+
+### 9.5 Optional background services
+
+For queue-driven automation and live WhatsApp functionality, keep the local PostgreSQL and Redis services running and start the relevant processes in separate terminals:
+
+```bash
+pnpm --filter @wacrm/worker dev
+pnpm --filter @wacrm/whatsapp dev
+```
+
+Configure and test an AI provider from the dashboard before enabling AI replies. A valid OpenAI API key and sufficient API quota are required for OpenAI-backed features.
+
+### 9.6 Stop local infrastructure
+
+```bash
+docker compose -f deploy/docker-compose.dev.yml down
+```
+
+To remove local database and object-storage data as well, use `docker compose -f deploy/docker-compose.dev.yml down -v`. This permanently deletes the local Compose volumes.
+
+## 10. Deployment
+
+The repository includes a Render Blueprint at `AgenticCRM-main/render.yaml` for the dashboard and API web services. The deployed public dashboard and API URLs are listed in the Live demo section.
+
+For a complete self-hosted stack, the repository also includes Dockerfiles for the API, dashboard, worker and WhatsApp services, plus Docker Compose configuration under `AgenticCRM-main/deploy/`. Review environment values, persistent storage, secrets, database backups, HTTPS and service health before production use.
+
+## 11. Security and operational notes
+
+- Never commit `.env`, passwords, API keys, database URLs or WhatsApp session credentials.
+- Generate unique production values for `JWT_SECRET` and `ENCRYPTION_KEY`; retain the encryption key because stored encrypted credentials depend on it.
+- Configure OpenAI credentials through the application settings and ensure the API account has available quota.
+- Use HTTPS and restrict access to administrative accounts.
+- Verify the API readiness endpoint and worker/WhatsApp process logs when testing background features.
+- Use test-mode payment credentials when integrating a payment gateway.
+- Keep fictional demo data separate from real customer and financial records.
+
+## 12. Repository layout
+
+```text
+enginoww/
+└── AgenticCRM-main/
+    ├── apps/
+    │   ├── api/          # NestJS backend
+    │   ├── dashboard/    # Next.js web application
+    │   ├── worker/       # BullMQ background processors
+    │   └── whatsapp/     # Baileys WhatsApp service
+    ├── packages/
+    │   ├── database/     # Prisma schema and database utilities
+    │   └── shared/       # Shared types and utilities
+    ├── deploy/           # Docker Compose and deployment assets
+    ├── scripts/          # Verification, audit and smoke-test scripts
+    ├── render.yaml       # Render web-service blueprint
+    └── package.json
+```
+
+## 13. Future enhancements
+
+- Deploy and monitor the dedicated worker and WhatsApp services in the hosted environment.
+- Add further verified call-provider integrations and inbound lead ingestion connectors.
+- Expand storefront publishing and branded product catalogue capabilities.
+- Add end-to-end automated tests for critical sales and automation journeys.
+- Improve operational monitoring for queue latency, failed jobs and message delivery.
+
+## License
+
+This project includes an MIT license. See [AgenticCRM-main/LICENSE](AgenticCRM-main/LICENSE).
+) {
+    [Environment]::SetEnvironmentVariable($matches[1].Trim(), $matches[2].Trim(), 'Process')
+  }
+}
 pnpm --filter @wacrm/api exec nest start --watch
 ```
 
