@@ -58,9 +58,10 @@ export class ReportsService {
   }
 
   async stats(companyId: string): Promise<ReportStatsSnapshot> {
-    const [byStatus, scheduled] = await Promise.all([
+    const [byStatus, scheduled, totalRuns] = await Promise.all([
       prisma.customReport.groupBy({ by: ['status'], where: { companyId }, _count: true }),
       prisma.scheduledReport.count({ where: { companyId, isActive: true } }),
+      prisma.reportActivity.count({ where: { companyId, type: 'RUN' } }),
     ]);
 
     const countByStatus = Object.fromEntries(byStatus.map(r => [r.status, r._count]));
@@ -71,7 +72,7 @@ export class ReportsService {
       draft: countByStatus['DRAFT'] ?? 0,
       archived: countByStatus['ARCHIVED'] ?? 0,
       scheduled,
-      totalRuns: 0, // would need a runs counter column
+      totalRuns,
     };
   }
 
